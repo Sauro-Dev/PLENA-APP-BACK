@@ -1,0 +1,6 @@
+package com.plenamente.sgt.domain.entity;
+
+public enum MaterialStatus {
+    NUEVO, EN_USO, DANADO, RETIRADO
+
+}
