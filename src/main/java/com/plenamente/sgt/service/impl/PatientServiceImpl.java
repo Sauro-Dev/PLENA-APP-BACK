@@ -11,10 +11,7 @@ import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
 import com.plenamente.sgt.infra.repository.TutorRepository;
 import com.plenamente.sgt.service.PatientService;
-import jakarta.persistence.ManyToOne;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -49,6 +46,7 @@ public class PatientServiceImpl implements PatientService {
         patient.setName(registerPatient.name());
         patient.setPaternalSurname(registerPatient.paternalSurname());
         patient.setMaternalSurname(registerPatient.maternalSurname());
+        patient.setDni(registerPatient.dni());
         patient.setBirthdate(registerPatient.birthdate());
         patient.setAge(registerPatient.age());
         patient.setAllergies(registerPatient.allergies());
@@ -102,6 +100,7 @@ public class PatientServiceImpl implements PatientService {
         existingPatient.setName(updatePatient.name());
         existingPatient.setPaternalSurname(updatePatient.paternalSurname());
         existingPatient.setMaternalSurname(updatePatient.maternalSurname());
+        existingPatient.setDni(updatePatient.dni());
         existingPatient.setBirthdate(updatePatient.birthdate());
         existingPatient.setAge(updatePatient.age());
         existingPatient.setAllergies(updatePatient.allergies());
@@ -138,6 +137,7 @@ public class PatientServiceImpl implements PatientService {
                 patient.getName(),
                 patient.getPaternalSurname(),
                 patient.getMaternalSurname(),
+                patient.getDni(),
                 patient.getAge(),
                 patient.getIdPlan().getIdPlan(),
                 patient.getTutors().stream().map(Tutor::getFullName).collect(Collectors.toList()),

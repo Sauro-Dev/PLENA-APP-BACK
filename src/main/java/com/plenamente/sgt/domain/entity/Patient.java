@@ -20,6 +20,7 @@ public class Patient {
     private String name;
     private String paternalSurname;
     private String maternalSurname;
+    private String dni;
     private LocalDate birthdate;
     private int age;
     private String allergies;

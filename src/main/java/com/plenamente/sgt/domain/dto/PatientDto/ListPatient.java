@@ -7,6 +7,7 @@ public record ListPatient(
         String name,
         String paternalSurname,
         String maternalSurname,
+        String dni,
         int age,
         Long planId,
         List<String> tutorNames,
