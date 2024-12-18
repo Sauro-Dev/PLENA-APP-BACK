@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 @RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService {
@@ -70,8 +71,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public TokenResponse addUser(RegisterUser data) {
         boolean isAlsoTherapist = data.paymentSession() != null;
+
         User user = UserFactory.createUser(data.role(), isAlsoTherapist);
 
+        // Asigna valores comunes
         user.setName(data.name());
         user.setPaternalSurname(data.paternalSurname());
         user.setMaternalSurname(data.maternalSurname());
@@ -85,16 +88,27 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(data.password()));
         user.setRol(data.role());
 
-        // Lógica adicional para roles específicos
+        // Asigna valores específicos del rol
         if (user instanceof Therapist) {
             Double paymentSession = data.paymentSession();
             if (paymentSession != null) {
                 ((Therapist) user).setPaymentSession(paymentSession);
+            } else {
+                throw new IllegalArgumentException("El campo paymentSession es obligatorio para Terapeuta.");
+            }
+        } else if (user instanceof Secretary secretary) {
+            Double paymentMonthly = data.paymentMonthly();
+            if (paymentMonthly != null) {
+                secretary.setPaymentMonthly(paymentMonthly);
+            } else {
+                throw new IllegalArgumentException("El campo paymentMonthly es obligatorio para Secretario.");
             }
         }
 
+        // Guarda el usuario
         userRepository.save(user);
 
+        // Genera el token
         String token = jwtService.getToken(user, user);
         return TokenResponse.builder()
                 .token(token)
@@ -119,6 +133,7 @@ public class UserServiceImpl implements UserService {
                 ))
                 .collect(Collectors.toList());
     }
+
     @Override
     public ListUser getUserById(Long id) {
         User user = userRepository.findById(id)

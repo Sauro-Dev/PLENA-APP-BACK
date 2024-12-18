@@ -1,5 +1,6 @@
 package com.plenamente.sgt.domain.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
@@ -10,5 +11,6 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 public class Therapist extends User {
-    private double paymentSession;
+    @Column(nullable = false)
+    private Double paymentSession;
 }
