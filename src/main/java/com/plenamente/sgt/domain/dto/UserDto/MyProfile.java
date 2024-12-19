@@ -16,5 +16,6 @@ public record MyProfile(
         @NotBlank @Length(max = 9) String phone,
         @Length(max = 9) String phoneBackup,
         @NotBlank @Email String email,
-        Rol role // Opcional para mostrar el rol
+        Rol role,
+        @Length(min = 4) String newPassword
 ) {}

@@ -3,7 +3,6 @@ package com.plenamente.sgt.service.impl;
 import com.plenamente.sgt.domain.dto.UserDto.ListUser;
 import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
 import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
-import com.plenamente.sgt.domain.entity.AdminTherapist;
 import com.plenamente.sgt.domain.entity.Secretary;
 import com.plenamente.sgt.domain.entity.Therapist;
 import com.plenamente.sgt.domain.entity.User;
@@ -167,7 +166,8 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
-                user.getRol()
+                user.getRol(),
+                null
         );
     }
 
@@ -186,7 +186,11 @@ public class UserServiceImpl implements UserService {
         user.setPhoneBackup(myProfileDto.phoneBackup());
         user.setEmail(myProfileDto.email());
 
-        userRepository.save(user); // Guardar cambios
+        if (myProfileDto.newPassword() != null && !myProfileDto.newPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(myProfileDto.newPassword()));
+        }
+
+        userRepository.save(user);
 
         return new MyProfile(
                 user.getName(),
@@ -197,7 +201,8 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
-                user.getRol()
+                user.getRol(),
+                null
         );
     }
 }
