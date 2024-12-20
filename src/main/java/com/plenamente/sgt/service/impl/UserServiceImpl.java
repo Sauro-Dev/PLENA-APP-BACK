@@ -1,5 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
+import com.plenamente.sgt.domain.dto.UserDto.CredentialsUpdate;
 import com.plenamente.sgt.domain.dto.UserDto.ListUser;
 import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
 import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
@@ -62,8 +63,17 @@ public class UserServiceImpl implements UserService {
         // Genera el token para el usuario autenticado
         String token = jwtService.getToken((UserDetails) authentication.getPrincipal(), user);
 
+
+        boolean isFirstLogin = user.isFirstLogin();
+
+        if (isFirstLogin) {
+            user.setFirstLogin(false);
+            userRepository.save(user);
+        }
+
         return TokenResponse.builder()
                 .token(token)
+                .firstLogin(isFirstLogin)
                 .build();
     }
 
@@ -207,5 +217,15 @@ public class UserServiceImpl implements UserService {
                 user.getRol(),
                 null
         );
+    }
+
+    public void updateCredentials(String currentUsername, CredentialsUpdate credentialsUpdate) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + currentUsername));
+
+        user.setUsername(credentialsUpdate.username());
+        user.setPassword(passwordEncoder.encode(credentialsUpdate.newPassword()));
+
+        userRepository.save(user);
     }
 }
