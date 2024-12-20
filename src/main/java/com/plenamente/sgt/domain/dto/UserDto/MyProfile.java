@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 
 public record MyProfile(
+        @NotBlank @Length(max = 20) String username,
         @NotBlank @Length(max = 100) String name,
         @Length(max = 100) String paternalSurname,
         @Length(max = 100) String maternalSurname,
@@ -16,5 +17,6 @@ public record MyProfile(
         @NotBlank @Length(max = 9) String phone,
         @Length(max = 9) String phoneBackup,
         @NotBlank @Email String email,
-        Rol role // Opcional para mostrar el rol
+        Rol role,
+        @Length(min = 4) String newPassword
 ) {}
