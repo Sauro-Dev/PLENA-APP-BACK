@@ -26,7 +26,6 @@ public class Patient {
     private String allergies;
 
 
-
     private boolean status = true;
 
     @ManyToOne()

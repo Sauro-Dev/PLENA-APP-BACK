@@ -17,4 +17,8 @@ public class Tutor {
     private String fullName;
     private String dni;
     private String phone;
+
+    @ManyToOne
+    @JoinColumn(name = "patient_id", nullable = false)
+    private Patient patient;
 }

@@ -23,8 +23,13 @@ public class PatientController {
 
     // Endpoint para registrar un paciente
     @PostMapping("/register")
-    public ResponseEntity<Patient> registerPatient(@RequestBody RegisterPatient registerPatient) {
-        return ResponseEntity.ok(patientService.createPatient(registerPatient));
+    public ResponseEntity<?> registerPatient(@RequestBody RegisterPatient registerPatient) {
+        try {
+            Patient patient = patientService.createPatient(registerPatient);
+            return ResponseEntity.ok(patient);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
     }
 
     // Endpoint para listar todos los pacientes
@@ -67,5 +72,10 @@ public class PatientController {
     public ResponseEntity<List<ListPatient>> orderPatientsByName(@RequestParam String order) {
         List<ListPatient> orderedPatients = patientService.orderPatientsByName(order);
         return ResponseEntity.ok(orderedPatients);
+    }
+    @GetMapping("/validate-dni")
+    public ResponseEntity<Boolean> validateDNI(@RequestParam String dni) {
+        boolean isTaken = patientService.isDNITaken(dni);
+        return ResponseEntity.ok(isTaken);
     }
 }

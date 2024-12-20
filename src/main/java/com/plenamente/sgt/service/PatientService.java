@@ -25,4 +25,6 @@ public interface PatientService {
     List<ListPatient> filterPatientsByName(String name);
     List<ListPatient> filterPatientsByPlan(Long planId);
     List<ListPatient> orderPatientsByName(String order);
+
+    boolean isDNITaken(String dni);
 }

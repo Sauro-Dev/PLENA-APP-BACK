@@ -3,6 +3,7 @@ package com.plenamente.sgt.service.impl;
 import com.plenamente.sgt.domain.dto.PatientDto.RegisterPatient;
 import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
+import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Tutor;
@@ -27,22 +28,17 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public Patient createPatient(RegisterPatient registerPatient) {
-        // Validación del apoderado
-        if (registerPatient.tutors().isEmpty() || registerPatient.tutors().get(0) == null) {
-            throw new IllegalArgumentException("El campo apoderado 1 es obligatorio.");
+        // Validar si el DNI ya existe
+        if (patientRepository.existsByDni(registerPatient.dni())) {
+            throw new IllegalArgumentException("El DNI ya está registrado en el sistema.");
         }
 
-        // Validación de los días según el plan
-        //Plan plan = registerPatient.idPlan(); // Asumiendo que Plan tiene un metodo para obtener días
-        // Aqui puedes poner la validacion que gustes cuando hagas el dto de plan y todo eso ps xd
-
+        // Obtener el plan asociado
         Plan plan = planRepository.findById(registerPatient.idPlan())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado."));
 
         // Crear paciente
         Patient patient = new Patient();
-
-
         patient.setName(registerPatient.name());
         patient.setPaternalSurname(registerPatient.paternalSurname());
         patient.setMaternalSurname(registerPatient.maternalSurname());
@@ -51,20 +47,15 @@ public class PatientServiceImpl implements PatientService {
         patient.setAge(registerPatient.age());
         patient.setAllergies(registerPatient.allergies());
         patient.setIdPlan(plan);
-        patient.setTutors(registerPatient.tutors());
 
-        if(registerPatient.tutors().size() == 1){
-            Tutor tutor = registerPatient.tutors().get(0);
-            tutorRepository.save(tutor);
-        }
-        if(registerPatient.tutors().size() == 2) {
-            Tutor tutor1 = registerPatient.tutors().get(0);
-            Tutor tutor2 = registerPatient.tutors().get(1);
-            tutorRepository.save(tutor1);
-            tutorRepository.save(tutor2);
-        }
+        // Asignar tutores al paciente
+        List<Tutor> tutors = registerPatient.tutors().stream()
+                .peek(tutor -> tutor.setPatient(patient)) // Configurar la relación inversa
+                .collect(Collectors.toList());
 
+        patient.setTutors(tutors);
 
+        // Guardar el paciente junto con sus tutores
         return patientRepository.save(patient);
     }
 
@@ -109,6 +100,11 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    public boolean isDNITaken(String dni) {
+        return patientRepository.existsByDni(dni);
+    }
+
+    @Override
     public List<ListPatient> filterPatientsByName(String name) {
         return patientRepository.findByNameContainingIgnoreCase(name)
                 .stream().map(this::mapToListPatient).collect(Collectors.toList());
@@ -140,7 +136,10 @@ public class PatientServiceImpl implements PatientService {
                 patient.getDni(),
                 patient.getAge(),
                 patient.getIdPlan().getIdPlan(),
-                patient.getTutors().stream().map(Tutor::getFullName).collect(Collectors.toList()),
+                patient.getTutors().stream()
+                        .map(tutor -> new TutorDTO(tutor.getFullName(), tutor.getDni(), tutor.getPhone()))
+                        .collect(Collectors.toList()),
+                patient.getAllergies(),
                 patient.isStatus()
         );
     }

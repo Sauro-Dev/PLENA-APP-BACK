@@ -1,5 +1,7 @@
 package com.plenamente.sgt.domain.dto.PatientDto;
 
+import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
+
 import java.util.List;
 
 public record ListPatient(
@@ -10,6 +12,7 @@ public record ListPatient(
         String dni,
         int age,
         Long planId,
-        List<String> tutorNames,
+        List<TutorDTO> tutors,
+        String allergies,// Cambiar a un DTO que incluya todos los detalles
         boolean status
 ) {}
