@@ -1,5 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
+import com.plenamente.sgt.domain.dto.UserDto.CredentialsUpdate;
 import com.plenamente.sgt.domain.dto.UserDto.ListUser;
 import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
 import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
@@ -216,5 +217,15 @@ public class UserServiceImpl implements UserService {
                 user.getRol(),
                 null
         );
+    }
+
+    public void updateCredentials(String currentUsername, CredentialsUpdate credentialsUpdate) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + currentUsername));
+
+        user.setUsername(credentialsUpdate.username());
+        user.setPassword(passwordEncoder.encode(credentialsUpdate.newPassword()));
+
+        userRepository.save(user);
     }
 }
