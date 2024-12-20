@@ -158,6 +158,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
         return new MyProfile(
+                user.getUsername(),
                 user.getName(),
                 user.getPaternalSurname(),
                 user.getMaternalSurname(),
@@ -177,6 +178,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
 
         // Actualizar datos del usuario
+        user.setUsername(myProfileDto.username());
         user.setName(myProfileDto.name());
         user.setPaternalSurname(myProfileDto.paternalSurname());
         user.setMaternalSurname(myProfileDto.maternalSurname());
@@ -193,6 +195,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return new MyProfile(
+                user.getUsername(),
                 user.getName(),
                 user.getPaternalSurname(),
                 user.getMaternalSurname(),
