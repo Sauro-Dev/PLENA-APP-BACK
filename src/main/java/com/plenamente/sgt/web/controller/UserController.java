@@ -11,7 +11,6 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -64,6 +63,13 @@ public class UserController {
         // Obtenemos el username del usuario autenticado desde el contexto de seguridad
         String username = getAuthenticatedUsername();
         return ResponseEntity.ok(userService.updateMyProfile(username, myProfileDto));
+    }
+
+    @PutMapping("/update-credentials")
+    public ResponseEntity<Void> updateAdminCredentials(@RequestBody MyProfile profile) {
+        String username = getAuthenticatedUsername();
+        userService.updateMyProfile(username, profile);
+        return ResponseEntity.ok().build();
     }
 
     private String getAuthenticatedUsername() {

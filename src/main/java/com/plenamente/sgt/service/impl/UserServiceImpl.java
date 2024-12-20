@@ -62,8 +62,17 @@ public class UserServiceImpl implements UserService {
         // Genera el token para el usuario autenticado
         String token = jwtService.getToken((UserDetails) authentication.getPrincipal(), user);
 
+
+        boolean isFirstLogin = user.isFirstLogin();
+
+        if (isFirstLogin) {
+            user.setFirstLogin(false);
+            userRepository.save(user);
+        }
+
         return TokenResponse.builder()
                 .token(token)
+                .firstLogin(isFirstLogin)
                 .build();
     }
 

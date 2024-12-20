@@ -44,6 +44,10 @@ public abstract class User implements UserDetails {
     private LocalDate birthdate;
     private boolean enabled = true;
 
+    @Getter
+    @Setter
+    private boolean firstLogin = true;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
