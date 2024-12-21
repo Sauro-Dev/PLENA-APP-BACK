@@ -40,9 +40,9 @@ public class SecurityConfig implements WebMvcConfigurer {
         // Configuración general de seguridad
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/users/login", "/api/v1/users/register").permitAll() // Rutas públicas
+                        .requestMatchers("/api/v1/users/login", "/api/v1/users/forgot-password").permitAll()
                         .requestMatchers("/api/v1/users/me").authenticated()
-                        .requestMatchers("/swagger-ui.html", "/v3/api-docs/*", "/swagger-ui/*").permitAll() // Swagger
+                        .requestMatchers("/swagger-ui.html", "/v3/api-docs/*", "/swagger-ui/*").permitAll()
                         .anyRequest().authenticated() // Protege todas las demás rutas
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Sin estado
