@@ -26,6 +26,7 @@ public abstract class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUser;
+
     private String username;
     private String password;
     @Enumerated(EnumType.STRING)
@@ -43,6 +44,8 @@ public abstract class User implements UserDetails {
     private String phoneBackup;
     private LocalDate birthdate;
     private boolean enabled = true;
+    private int failedAttempts = 0;
+    private boolean locked = false;
 
     @Getter
     @Setter

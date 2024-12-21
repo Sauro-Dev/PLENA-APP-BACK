@@ -1,9 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
-import com.plenamente.sgt.domain.dto.UserDto.CredentialsUpdate;
-import com.plenamente.sgt.domain.dto.UserDto.ListUser;
-import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
-import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
+import com.plenamente.sgt.domain.dto.UserDto.*;
 import com.plenamente.sgt.infra.security.LoginRequest;
 import com.plenamente.sgt.infra.security.TokenResponse;
 import com.plenamente.sgt.service.UserService;
@@ -69,6 +66,13 @@ public class UserController {
     public ResponseEntity<Void> updateAdminCredentials(@RequestBody @Valid CredentialsUpdate credentialsUpdate) {
         String currentUsername = getAuthenticatedUsername();
         userService.updateCredentials(currentUsername, credentialsUpdate);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/forgot-password")
+    @Transactional
+    public ResponseEntity<Void> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+        userService.forgotPassword(request);
         return ResponseEntity.ok().build();
     }
 

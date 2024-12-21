@@ -1,9 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
-import com.plenamente.sgt.domain.dto.UserDto.CredentialsUpdate;
-import com.plenamente.sgt.domain.dto.UserDto.ListUser;
-import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
-import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
+import com.plenamente.sgt.domain.dto.UserDto.*;
 import com.plenamente.sgt.domain.entity.Secretary;
 import com.plenamente.sgt.domain.entity.Therapist;
 import com.plenamente.sgt.domain.entity.User;
@@ -37,7 +34,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public TokenResponse login(LoginRequest request) {
-        // Limpia el contexto de seguridad antes de autenticar
         SecurityContextHolder.clearContext();
 
         // Autentica al usuario
@@ -83,7 +79,6 @@ public class UserServiceImpl implements UserService {
 
         User user = UserFactory.createUser(data.role(), isAlsoTherapist);
 
-        // Asigna valores comunes
         user.setName(data.name());
         user.setPaternalSurname(data.paternalSurname());
         user.setMaternalSurname(data.maternalSurname());
@@ -97,7 +92,6 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(data.password()));
         user.setRol(data.role());
 
-        // Asigna valores específicos del rol
         if (user instanceof Therapist) {
             Double paymentSession = data.paymentSession();
             if (paymentSession != null) {
@@ -114,10 +108,8 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // Guarda el usuario
         userRepository.save(user);
 
-        // Genera el token
         String token = jwtService.getToken(user, user);
         return TokenResponse.builder()
                 .token(token)
@@ -228,4 +220,18 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
     }
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByUsername(request.username())
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + request.username()));
+
+        if (!user.getDni().equals(request.dni())) {
+            throw new IllegalArgumentException("El DNI proporcionado no coincide con el usuario.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
 }
