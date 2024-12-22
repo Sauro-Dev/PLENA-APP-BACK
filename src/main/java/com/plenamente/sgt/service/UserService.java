@@ -12,6 +12,7 @@ public interface UserService {
     TokenResponse addUser(RegisterUser usuario);
     ListUser getUserById(Long id);
     List<ListUser> getAllUsers();
+    void updateUserByAdmin(Long id, UpdateUserDto updateUserDto);
     MyProfile getMyProfile(String username);
     MyProfile updateMyProfile(String username, MyProfile myProfileDto);
     void updateCredentials(String currentUsername, @Valid CredentialsUpdate credentialsUpdate);

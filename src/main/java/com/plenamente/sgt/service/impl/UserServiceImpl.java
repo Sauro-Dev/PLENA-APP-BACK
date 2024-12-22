@@ -130,7 +130,8 @@ public class UserServiceImpl implements UserService {
                         user.getDni(),
                         user.getPhone(),
                         user.getPhoneBackup(),
-                        user.getAddress()  // nuevo campo
+                        user.getAddress(),
+                        user.getBirthdate()
                 ))
                 .collect(Collectors.toList());
     }
@@ -151,8 +152,32 @@ public class UserServiceImpl implements UserService {
                 user.getDni(),
                 user.getPhone(),
                 user.getPhoneBackup(),
-                user.getAddress()
+                user.getAddress(),
+                user.getBirthdate()
         );
+    }
+
+    @Override
+    public void updateUserByAdmin(Long id, UpdateUserDto updateUserDto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con id: " + id));
+
+        user.setUsername(updateUserDto.username());
+        if (updateUserDto.password() != null && !updateUserDto.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(updateUserDto.password()));
+        }
+        user.setName(updateUserDto.name());
+        user.setPaternalSurname(updateUserDto.paternalSurname());
+        user.setMaternalSurname(updateUserDto.maternalSurname());
+        user.setDni(updateUserDto.dni());
+        user.setEmail(updateUserDto.email());
+        user.setAddress(updateUserDto.address());
+        user.setPhone(updateUserDto.phone());
+        user.setPhoneBackup(updateUserDto.phoneBackup());
+        user.setBirthdate(updateUserDto.birthdate());
+        user.setEnabled(updateUserDto.enabled());
+
+        userRepository.save(user);
     }
 
     @Override

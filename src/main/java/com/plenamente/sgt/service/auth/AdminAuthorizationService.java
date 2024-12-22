@@ -15,4 +15,11 @@ public class AdminAuthorizationService implements AuthorizationService {
         }
     }
 
+    public void authorizeAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))) {
+            throw new SecurityException("Acceso denegado: Se requiere rol ADMIN.");
+        }
+    }
+
 }

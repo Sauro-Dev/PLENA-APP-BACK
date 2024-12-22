@@ -2,6 +2,8 @@ package com.plenamente.sgt.domain.dto.UserDto;
 
 import com.plenamente.sgt.domain.entity.Rol;
 
+import java.time.LocalDate;
+
 public record ListUser(
         Long id,
         String username,
@@ -13,5 +15,6 @@ public record ListUser(
         String dni,
         String phone,
         String phoneBackup,
-        String address
+        String address,
+        LocalDate birthdate
 ) {}

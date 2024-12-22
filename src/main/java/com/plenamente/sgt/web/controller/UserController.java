@@ -43,6 +43,13 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Void> updateUserByAdmin(@PathVariable Long id, @RequestBody @Valid UpdateUserDto updateUserDto) {
+        authorizationService.authorizeAdmin();
+        userService.updateUserByAdmin(id, updateUserDto);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<ListUser>> getAllUsers() {
         authorizationService.authorizeRegisterUser();
