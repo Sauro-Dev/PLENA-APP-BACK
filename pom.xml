@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.plenamente</groupId>
 	<artifactId>sgt</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>sgt</name>
 	<description>Proyecto Api de SGT para Plenamente</description>
 	<url/>
