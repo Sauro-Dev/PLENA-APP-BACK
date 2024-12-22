@@ -51,7 +51,6 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<MyProfile> getMyProfile() {
-        // Obtenemos el username del usuario autenticado desde el contexto de seguridad
         String username = getAuthenticatedUsername();
         return ResponseEntity.ok(userService.getMyProfile(username));
     }
@@ -66,6 +65,13 @@ public class UserController {
     public ResponseEntity<Void> updateAdminCredentials(@RequestBody @Valid CredentialsUpdate credentialsUpdate) {
         String currentUsername = getAuthenticatedUsername();
         userService.updateCredentials(currentUsername, credentialsUpdate);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/update-password")
+    public ResponseEntity<Void> updatePassword(@RequestBody @Valid PasswordUpdateRequest passwordUpdateRequest) {
+        String username = getAuthenticatedUsername(); // Obtiene el nombre del usuario autenticado
+        userService.updatePassword(username, passwordUpdateRequest);
         return ResponseEntity.ok().build();
     }
 

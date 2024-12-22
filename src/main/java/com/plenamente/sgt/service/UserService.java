@@ -15,6 +15,7 @@ public interface UserService {
     MyProfile getMyProfile(String username);
     MyProfile updateMyProfile(String username, MyProfile myProfileDto);
     void updateCredentials(String currentUsername, @Valid CredentialsUpdate credentialsUpdate);
+    void updatePassword(String username, PasswordUpdateRequest passwordUpdateRequest);
     void forgotPassword(@Valid ForgotPasswordRequest request);
 }
 

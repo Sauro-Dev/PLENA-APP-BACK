@@ -169,8 +169,8 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
-                user.getRol(),
-                null
+                user.getRol()
+
         );
     }
 
@@ -179,7 +179,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
 
-        // Actualizar datos del usuario
         user.setUsername(myProfileDto.username());
         user.setName(myProfileDto.name());
         user.setPaternalSurname(myProfileDto.paternalSurname());
@@ -190,9 +189,6 @@ public class UserServiceImpl implements UserService {
         user.setPhoneBackup(myProfileDto.phoneBackup());
         user.setEmail(myProfileDto.email());
 
-        if (myProfileDto.newPassword() != null && !myProfileDto.newPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(myProfileDto.newPassword()));
-        }
 
         userRepository.save(user);
 
@@ -206,8 +202,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
-                user.getRol(),
-                null
+                user.getRol()
         );
     }
 
@@ -218,6 +213,20 @@ public class UserServiceImpl implements UserService {
         user.setUsername(credentialsUpdate.username());
         user.setPassword(passwordEncoder.encode(credentialsUpdate.newPassword()));
 
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updatePassword(String username, PasswordUpdateRequest passwordUpdateRequest) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
+
+        boolean matches = passwordEncoder.matches(passwordUpdateRequest.currentPassword(), user.getPassword());
+        if (!matches) {
+            throw new IllegalArgumentException("La contraseña actual no es válida.");
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordUpdateRequest.newPassword()));
         userRepository.save(user);
     }
 
