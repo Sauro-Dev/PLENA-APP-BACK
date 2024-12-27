@@ -25,6 +25,7 @@ public class UserController {
     private final UserService userService;
     private final AuthorizationService authorizationService;
 
+
     @PostMapping("/login")
     @Transactional
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
@@ -77,7 +78,7 @@ public class UserController {
 
     @PutMapping("/update-password")
     public ResponseEntity<Void> updatePassword(@RequestBody @Valid PasswordUpdateRequest passwordUpdateRequest) {
-        String username = getAuthenticatedUsername(); // Obtiene el nombre del usuario autenticado
+        String username = getAuthenticatedUsername();
         userService.updatePassword(username, passwordUpdateRequest);
         return ResponseEntity.ok().build();
     }

@@ -194,6 +194,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
+                user.getBirthdate(),
                 user.getRol()
 
         );
@@ -213,6 +214,7 @@ public class UserServiceImpl implements UserService {
         user.setPhone(myProfileDto.phone());
         user.setPhoneBackup(myProfileDto.phoneBackup());
         user.setEmail(myProfileDto.email());
+        user.setBirthdate(myProfileDto.birthdate());
 
 
         userRepository.save(user);
@@ -227,6 +229,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
+                user.getBirthdate(),
                 user.getRol()
         );
     }

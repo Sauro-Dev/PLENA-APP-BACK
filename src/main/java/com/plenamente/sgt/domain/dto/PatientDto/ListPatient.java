@@ -13,6 +13,6 @@ public record ListPatient(
         int age,
         Long planId,
         List<TutorDTO> tutors,
-        String allergies,// Cambiar a un DTO que incluya todos los detalles
+        String allergies,
         boolean status
 ) {}

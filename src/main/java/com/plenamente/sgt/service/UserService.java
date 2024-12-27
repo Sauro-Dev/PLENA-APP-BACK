@@ -18,6 +18,7 @@ public interface UserService {
     void updateCredentials(String currentUsername, @Valid CredentialsUpdate credentialsUpdate);
     void updatePassword(String username, PasswordUpdateRequest passwordUpdateRequest);
     void forgotPassword(@Valid ForgotPasswordRequest request);
+
 }
 
 
