@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,7 @@ public class PatientController {
     private final PatientService patientService;
 
     // Endpoint para registrar un paciente
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @PostMapping("/register")
     public ResponseEntity<?> registerPatient(@RequestBody RegisterPatient registerPatient) {
         try {
@@ -33,6 +35,7 @@ public class PatientController {
     }
 
     // Endpoint para listar todos los pacientes
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/all")
     public ResponseEntity<List<ListPatient>> getAllPatients() {
         List<ListPatient> patients = patientService.getAllPatients();
@@ -40,6 +43,7 @@ public class PatientController {
     }
 
     // Endpoint para obtener un paciente por ID
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/select/{id}")
     public ResponseEntity<ListPatient> getPatientById(@PathVariable Long id) {
         ListPatient patient = patientService.getPatientById(id);
@@ -47,6 +51,7 @@ public class PatientController {
     }
 
     // Endpoint para actualizar un paciente
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @PutMapping("select/{id}")
     public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody UpdatePatient updatePatient) {
         Patient updatedPatient = patientService.updatePatient(id, updatePatient);
@@ -73,6 +78,7 @@ public class PatientController {
         List<ListPatient> orderedPatients = patientService.orderPatientsByName(order);
         return ResponseEntity.ok(orderedPatients);
     }
+
     @GetMapping("/validate-dni")
     public ResponseEntity<Boolean> validateDNI(@RequestParam String dni) {
         boolean isTaken = patientService.isDNITaken(dni);

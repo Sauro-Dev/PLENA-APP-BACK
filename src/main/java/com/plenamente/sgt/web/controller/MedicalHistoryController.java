@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,11 +19,14 @@ import java.util.List;
 public class MedicalHistoryController {
     private final MedicalHistoryService medicalHistoryService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @PostMapping("/register")
     public ResponseEntity<MedicalHistory> registerMedicalHistory(@RequestBody @Valid RegisterMedicalHistory medicalHistory) {
         MedicalHistory newMedicalHistory = medicalHistoryService.createMedicalHistory(medicalHistory);
         return new ResponseEntity<>(newMedicalHistory, HttpStatus.CREATED);
     }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/find/{id}")
     public ResponseEntity<List<ListMedicalHistory>> findMedicalHistoryByPatientId(@PathVariable Long id) {
         List<ListMedicalHistory> medicalHistories = medicalHistoryService.getReport_DocumentByPatientId(id);

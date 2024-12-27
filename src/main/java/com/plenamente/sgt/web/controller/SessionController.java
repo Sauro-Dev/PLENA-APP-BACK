@@ -11,6 +11,7 @@ import com.plenamente.sgt.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ import java.util.List;
 public class SessionController {
     private final SessionService sessionService;
 
+    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @PostMapping("/register" )
     public ResponseEntity<Session> registerSession(@RequestBody RegisterSession dto) {
         Session session = sessionService.createSession(dto);
@@ -36,6 +38,7 @@ public class SessionController {
         return ResponseEntity.ok(sessions);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Session> updateSession(@PathVariable("id") Long idSession,
                                                  @RequestBody UpdateSession dto) {
@@ -55,6 +58,7 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getSessionsByDate(date));
     }
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/presence/{id}")
     public ResponseEntity<Session> markPresence(@PathVariable("id") Long sessionId,
                                                 @RequestBody MarkPresenceSession dto) {
@@ -63,6 +67,7 @@ public class SessionController {
         return ResponseEntity.ok(updatedSession);
     }
 
+    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @PostMapping("/assign-from-session/{sessionId}")
     public ResponseEntity<String> assignSessionsFromSession(@PathVariable Long sessionId) {
         try {
@@ -75,6 +80,7 @@ public class SessionController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @GetMapping("/available-therapists")
     public ResponseEntity<List<ListTherapist>> getAvailableTherapists(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sessionDate,

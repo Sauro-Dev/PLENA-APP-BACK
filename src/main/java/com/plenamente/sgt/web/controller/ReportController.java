@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,12 +20,14 @@ import org.springframework.web.bind.annotation.*;
 public class ReportController {
     private final ReportService reportService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @PostMapping("/register")
     public ResponseEntity<Report> registerReport(@RequestBody @Valid RegisterReport report) {
         Report newReport = reportService.createReport(report);
         return new ResponseEntity<>(newReport, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Report> updateReport(@PathVariable Long id, @RequestBody UpdateReport report) {
         Report updtReport = reportService.updateReport(id,report);

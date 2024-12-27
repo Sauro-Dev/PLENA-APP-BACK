@@ -6,6 +6,7 @@ import com.plenamente.sgt.domain.entity.EvaluationDocument;
 import com.plenamente.sgt.service.EvaluationDocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,12 +16,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class EvaluationDocumentController {
     private final EvaluationDocumentService evaluationDocumentService;
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<EvaluationDocument> createEvaluationDocument(@RequestParam("file") MultipartFile file, RegisterEvaluationDocument evaluationDocument) {
         EvaluationDocument newEvaluationDocument = evaluationDocumentService.createEvaluationDocument(evaluationDocument, file);
         return new ResponseEntity<>(newEvaluationDocument, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @GetMapping("/download/{id}")
     public ResponseEntity<byte[]> downloadEvaluationDocument(@PathVariable Long id) {
         EvaluationDocument document = evaluationDocumentService.downloadEvaluationDocument(id);
@@ -32,6 +35,8 @@ public class EvaluationDocumentController {
                 .build());
         return new ResponseEntity<>(document.getArchive(), headers, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<UpdateEvaluationDocument> updateEvaluationDocument(
             @PathVariable Long id,UpdateEvaluationDocument evaluationDocumentUp) {
