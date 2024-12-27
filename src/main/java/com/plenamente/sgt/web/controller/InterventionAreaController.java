@@ -23,30 +23,35 @@ public class InterventionAreaController {
 
     private final InterventionAreaService interventionAreaService;
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<InterventionArea> createInterventionArea(@RequestBody @Valid CreateAreaForIntervention dto) {
         InterventionArea interventionArea = interventionAreaService.createAreaForIntervention(dto.name(), dto.description());
         return new ResponseEntity<>(interventionArea, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<ListInterventionArea>> getAllInterventionAreas() {
         List<ListInterventionArea> areas = interventionAreaService.getAllInterventionAreas();
         return new ResponseEntity<>(areas, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<InterventionArea> deleteInterventionArea(@PathVariable Long id) {
         interventionAreaService.deleteInterventionArea(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<InterventionArea> updateInterventionArea(@PathVariable Long id, @RequestBody CreateAreaForIntervention createInterventionArea){
         interventionAreaService.updateInterventionArea(id,createInterventionArea);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<reportInterventionArea> getInterventionArea(@PathVariable Long id) {
         InterventionArea interventionArea = interventionAreaService.getInterventionArea(id);
@@ -58,6 +63,7 @@ public class InterventionAreaController {
 
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }
+
     @GetMapping("/find/{id}")
     public ResponseEntity<List<ListInterventionArea>> getInterventionArea(@PathVariable("id") String materialId) {
         List<ListInterventionArea> interventionArea = interventionAreaService.getInterventionAreaByMaterial(materialId);

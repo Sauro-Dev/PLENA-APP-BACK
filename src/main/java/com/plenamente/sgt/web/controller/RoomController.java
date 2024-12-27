@@ -20,6 +20,7 @@ public class RoomController {
     @Autowired
     private RoomService roomService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<Room> registerRoom(@RequestBody Room room) {
         Room newRoom = roomService.registerRoom(room);
@@ -38,24 +39,29 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/{roomId}/materials")
     public ResponseEntity<List<Material>> getMaterialsByRoom(@PathVariable Long roomId) {
         List<Material> materials = roomService.getMaterialsByRoom(roomId);
         return ResponseEntity.ok(materials);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/{roomId}")
     public ResponseEntity<Room> getRoomById(@PathVariable Long roomId) {
         Room room = roomService.getRoomById(roomId);
         return ResponseEntity.ok(room);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{roomId}")
     public ResponseEntity<Room> updateRoom(@PathVariable Long roomId, @RequestBody Room roomUpdated) {
         Room room = roomService.updateRoom(roomId,roomUpdated);
         return ResponseEntity.ok(room);
     }
 
+    // canbiar por borrado logico @Alfredo
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{roomId}")
     public ResponseEntity<String> deleteRoom(@PathVariable Long roomId) {
         roomService.deleteRoom(roomId);

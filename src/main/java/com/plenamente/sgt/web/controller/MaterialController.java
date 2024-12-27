@@ -18,24 +18,28 @@ public class MaterialController {
 
     private final MaterialService materialService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<Material> registerMaterial(@RequestBody RegisterMaterial dto) {
         Material newMaterial = materialService.registerMaterial(dto);
         return new ResponseEntity<>(newMaterial, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/all")
     public ResponseEntity<List<RegisterMaterial>> getAllMaterials() {
         List<RegisterMaterial> materials = materialService.getAllMaterials();
         return new ResponseEntity<>(materials, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/select/{id}")
     public ResponseEntity<ListMaterial> getMaterialById(@PathVariable String id) {
         ListMaterial material = materialService.getMaterialById(id);
         return new ResponseEntity<>(material, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Material> updateMaterial(
             @PathVariable String id,
@@ -44,6 +48,7 @@ public class MaterialController {
         return new ResponseEntity<>(updated, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{materialId}/assign/{roomId}")
     public ResponseEntity<Material> assignMaterialToRoom(
             @PathVariable String materialId,
@@ -52,17 +57,21 @@ public class MaterialController {
         return new ResponseEntity<>(assignedMaterial, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{materialId}/unassign")
     public ResponseEntity<Material> unassignMaterialFromRoom(@PathVariable String materialId) {
         Material unassignedMaterial = materialService.unassignMaterialFromRoom(materialId);
         return new ResponseEntity<>(unassignedMaterial, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/unassigned")
     public ResponseEntity<List<RegisterMaterial>> getUnassignedMaterials() {
         List<RegisterMaterial> unassignedMaterials = materialService.getUnassignedMaterials();
         return new ResponseEntity<>(unassignedMaterials, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{materialId}")
     public ResponseEntity<Void> deleteMaterial(@PathVariable String materialId) {
         materialService.deleteMaterial(materialId);

@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +33,7 @@ public class UserController {
         return ResponseEntity.ok(userService.login(request));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     @Transactional
     public ResponseEntity<TokenResponse> addUser(@RequestBody @Valid RegisterUser data) {
@@ -39,11 +41,13 @@ public class UserController {
         return ResponseEntity.ok(userService.addUser(data));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/select/{id}")
     public ResponseEntity<ListUser> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Void> updateUserByAdmin(@PathVariable Long id, @RequestBody @Valid UpdateUserDto updateUserDto) {
         authorizationService.authorizeAdmin();
@@ -51,6 +55,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<ListUser>> getAllUsers() {
         authorizationService.authorizeRegisterUser();
@@ -69,6 +74,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateMyProfile(username, myProfileDto));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update-credentials")
     public ResponseEntity<Void> updateAdminCredentials(@RequestBody @Valid CredentialsUpdate credentialsUpdate) {
         String currentUsername = getAuthenticatedUsername();
