@@ -45,7 +45,7 @@ public class PatientServiceImpl implements PatientService {
         patient.setDni(registerPatient.dni());
         patient.setBirthdate(registerPatient.birthdate());
         patient.setAge(registerPatient.age());
-        patient.setAllergies(registerPatient.allergies());
+        patient.setPresumptiveDiagnosis(registerPatient.presumptiveDiagnosis());
         patient.setIdPlan(plan);
 
         // Asignar tutores al paciente
@@ -94,7 +94,7 @@ public class PatientServiceImpl implements PatientService {
         existingPatient.setDni(updatePatient.dni());
         existingPatient.setBirthdate(updatePatient.birthdate());
         existingPatient.setAge(updatePatient.age());
-        existingPatient.setAllergies(updatePatient.allergies());
+        existingPatient.setPresumptiveDiagnosis(updatePatient.presumptiveDiagnosis());
 
         return patientRepository.save(existingPatient);
     }
@@ -139,7 +139,7 @@ public class PatientServiceImpl implements PatientService {
                 patient.getTutors().stream()
                         .map(tutor -> new TutorDTO(tutor.getFullName(), tutor.getDni(), tutor.getPhone()))
                         .collect(Collectors.toList()),
-                patient.getAllergies(),
+                patient.getPresumptiveDiagnosis(),
                 patient.isStatus()
         );
     }

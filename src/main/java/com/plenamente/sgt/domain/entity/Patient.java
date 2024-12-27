@@ -23,8 +23,7 @@ public class Patient {
     private String dni;
     private LocalDate birthdate;
     private int age;
-    private String allergies;
-
+    private String presumptiveDiagnosis;  // Ahora en minúscula
 
     private boolean status = true;
 
