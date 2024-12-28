@@ -30,8 +30,8 @@ public class Patient {
     private String presumptiveDiagnosis;
 
     @ManyToOne
-    @JoinColumn(name = "plan_id", nullable = false)  // Restaurar relación
-    private Plan idPlan;  // Relación restaurada
+    @JoinColumn(name = "plan_id", nullable = false)
+    private Plan idPlan;
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

@@ -6,8 +6,6 @@ import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.Session;
-import com.plenamente.sgt.domain.entity.Therapist;
-import com.plenamente.sgt.domain.entity.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

@@ -42,10 +42,21 @@ public class SessionServiceImpl implements SessionService {
         Plan plan = planRepository.findById(dto.planId())
                 .orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
 
+        LocalTime endTime = dto.startTime().plusMinutes(50);
+        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                dto.therapistId(), dto.sessionDate(), dto.startTime(), endTime, 0L)) {
+            throw new IllegalArgumentException("El terapeuta ya tiene una sesión que entra en conflicto con este horario.");
+        }
+
+        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                room.getIdRoom(), dto.sessionDate(), dto.startTime(), endTime, 0L)) {
+            throw new IllegalArgumentException("La sala ya está ocupada en este horario.");
+        }
+
         Session session = new Session();
         session.setSessionDate(dto.sessionDate());
         session.setStartTime(dto.startTime());
-        session.setEndTime(dto.endTime());
+        session.setEndTime(endTime);
         session.setPatient(patient);
         session.setTherapist(therapist);
         session.setRoom(room);
@@ -55,12 +66,10 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public List<ListSession> getSessionsByTherapist(Long therapistId) {
-        // Verificar que el terapeuta existe
         userRepository.findById(therapistId)
                 .filter(user -> user instanceof Therapist)
                 .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado"));
 
-        // Consultar las sesiones asignadas al terapeuta
         return sessionRepository.findByTherapist_IdUser(therapistId)
                 .stream()
                 .map(session -> new ListSession(
@@ -105,13 +114,23 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session updateSession(UpdateSession dto) {
-        // Usamos el idSession que se pasa en la URL (ya que se ha asignado al DTO en el controlador)
         Session session = sessionRepository.findByIdSession(dto.idSession())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
 
+        LocalTime endTime = dto.startTime().plusMinutes(50);
+        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                session.getTherapist().getIdUser(), dto.sessionDate(), dto.startTime(), endTime, dto.idSession())) {
+            throw new IllegalArgumentException("El terapeuta ya tiene una sesión que entra en conflicto con este horario.");
+        }
+
+        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                session.getRoom().getIdRoom(), dto.sessionDate(), dto.startTime(), endTime, dto.idSession())) {
+            throw new IllegalArgumentException("La sala ya está ocupada en este horario.");
+        }
+
         session.setSessionDate(dto.sessionDate());
         session.setStartTime(dto.startTime());
-        session.setEndTime(dto.endTime());
+        session.setEndTime(endTime);
         session.setReason(dto.reason());
         session.setRescheduled(true);
 
@@ -120,15 +139,12 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session markPresence(MarkPresenceSession dto) {
-        // Obtener la sesión por el ID
         Session session = sessionRepository.findByIdSession(dto.sessionId())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
 
-        // Marcar la presencia del terapeuta y paciente
         session.setTherapistPresent(dto.therapistPresent());
         session.setPatientPresent(dto.patientPresent());
 
-        // Guardar la sesión actualizada
         return sessionRepository.save(session);
     }
 
@@ -145,11 +161,9 @@ public class SessionServiceImpl implements SessionService {
             throw new IllegalArgumentException("El paciente no tiene un plan válido asociado a la sesión");
         }
 
-        // Crea 1 sesión por semana durante 4 semanas (un mes)
         List<LocalDate> sessionDates = calculateWeeklySessionDates(startDate);
 
         for (LocalDate sessionDate : sessionDates) {
-            // Evitar duplicar la sesión inicial
             if (sessionDate.isEqual(startDate)) {
                 continue;
             }
@@ -172,7 +186,6 @@ public class SessionServiceImpl implements SessionService {
     private List<LocalDate> calculateWeeklySessionDates(LocalDate startDate) {
         List<LocalDate> dates = new ArrayList<>();
 
-        // Generar fechas: una por semana durante 4 semanas
         for (int i = 0; i < 4; i++) {
             dates.add(startDate.plusWeeks(i));
         }
@@ -185,7 +198,6 @@ public class SessionServiceImpl implements SessionService {
     public List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime) {
         List<User> therapists = userRepository.findByRol(Rol.THERAPIST);
 
-        // Filtrar los terapeutas disponibles, y mapearlos a la clase ListTherapist
         return therapists.stream()
                 .filter(therapist -> isTherapistAvailable(therapist.getIdUser(), date, startTime, endTime))
                 .map(therapist -> new ListTherapist(
@@ -196,8 +208,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
-        return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
-                therapistId, date, endTime, startTime);
+        return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                therapistId, date, startTime, endTime, 0L);
     }
-
 }

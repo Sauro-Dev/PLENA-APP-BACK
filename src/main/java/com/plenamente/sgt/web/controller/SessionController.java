@@ -6,7 +6,6 @@ import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.Session;
-import com.plenamente.sgt.domain.entity.User;
 import com.plenamente.sgt.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -43,7 +42,6 @@ public class SessionController {
                 idSession,
                 dto.sessionDate(),
                 dto.startTime(),
-                dto.endTime(),
                 dto.reason()
         );
 
