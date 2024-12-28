@@ -78,8 +78,8 @@ public class SessionServiceImpl implements SessionService {
                 .map(session -> new ListSession(
                         session.getIdSession(),
                         session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
+                        formatTime12Hour(session.getStartTime()),
+                        formatTime12Hour(session.getEndTime()),
                         session.getPatient().getName(),
                         session.getTherapist().getName(),
                         session.getRoom().getName(),
@@ -103,8 +103,8 @@ public class SessionServiceImpl implements SessionService {
                 .map(session -> new ListSession(
                         session.getIdSession(),
                         session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
+                        formatTime12Hour(session.getStartTime()),
+                        formatTime12Hour(session.getEndTime()),
                         session.getPatient().getName(),
                         session.getTherapist().getName(),
                         session.getRoom().getName(),
@@ -236,5 +236,9 @@ public class SessionServiceImpl implements SessionService {
 
     private boolean isAfternoonTime(LocalTime time) {
         return !time.isBefore(LocalTime.of(15, 0)) && time.isBefore(LocalTime.of(19, 1));
+    }
+
+    private String formatTime12Hour(LocalTime time) {
+        return time != null ? time.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")) : null;
     }
 }
