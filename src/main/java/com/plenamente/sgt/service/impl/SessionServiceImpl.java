@@ -30,6 +30,9 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session createSession(RegisterSession dto) {
+        if (isInvalidTime(dto.startTime())) {
+            throw new IllegalArgumentException("El horario está fuera del rango permitido (9:00 a.m - 1:00 p.m y 3:00 p.m - 7:00 p.m)");
+        }
         Patient patient = patientRepository.findById(dto.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado"));
         User user = userRepository.findById(dto.therapistId())
@@ -114,6 +117,10 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session updateSession(UpdateSession dto) {
+        if (isInvalidTime(dto.startTime())) {
+            throw new IllegalArgumentException("El horario está fuera del rango permitido (9:00 a.m - 1:00 p.m y 3:00 p.m - 7:00 p.m)");
+        }
+
         Session session = sessionRepository.findByIdSession(dto.idSession())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
 
@@ -210,5 +217,24 @@ public class SessionServiceImpl implements SessionService {
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
         return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
                 therapistId, date, startTime, endTime, 0L);
+    }
+
+
+    private boolean isInvalidTime(LocalTime startTime) {
+        LocalTime endTime = startTime.plusMinutes(50);
+        return !isWithinWorkingHours(startTime, endTime);
+    }
+
+    private boolean isWithinWorkingHours(LocalTime startTime, LocalTime endTime) {
+        return (isMorningTime(startTime) && isMorningTime(endTime)) ||
+                (isAfternoonTime(startTime) && isAfternoonTime(endTime));
+    }
+
+    private boolean isMorningTime(LocalTime time) {
+        return !time.isBefore(LocalTime.of(9, 0)) && time.isBefore(LocalTime.of(13, 1));
+    }
+
+    private boolean isAfternoonTime(LocalTime time) {
+        return !time.isBefore(LocalTime.of(15, 0)) && time.isBefore(LocalTime.of(19, 1));
     }
 }
