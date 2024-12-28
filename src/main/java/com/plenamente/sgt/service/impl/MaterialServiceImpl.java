@@ -11,6 +11,7 @@ import com.plenamente.sgt.mapper.MaterialMapper;
 import com.plenamente.sgt.service.MaterialService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,7 @@ public class MaterialServiceImpl implements MaterialService {
         return materialRepository.save(material);  // Guardar el material en la base de datos
     }
 
+    @Cacheable("materials")
     @Override
     public List<RegisterMaterial> getAllMaterials() {
         List<Material> materials = materialRepository.findAll();
