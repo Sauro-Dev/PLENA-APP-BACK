@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,45 +25,73 @@ public class SessionServiceImpl implements SessionService {
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
-    private final PlanRepository planRepository;
 
     @Override
     public Session createSession(RegisterSession dto) {
         if (isInvalidTime(dto.startTime())) {
             throw new IllegalArgumentException("El horario está fuera del rango permitido (9:00 a.m - 1:00 p.m y 3:00 p.m - 7:00 p.m)");
         }
+
         Patient patient = patientRepository.findById(dto.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado"));
+
         User user = userRepository.findById(dto.therapistId())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         if (!(user instanceof Therapist therapist)) {
             throw new IllegalArgumentException("El usuario no es un terapeuta");
         }
+
         Room room = roomRepository.findById(dto.roomId())
                 .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada"));
-        Plan plan = planRepository.findById(dto.planId())
-                .orElseThrow(() -> new EntityNotFoundException("Plan no encontrado"));
 
-        LocalTime endTime = dto.startTime().plusMinutes(50);
-        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                dto.therapistId(), dto.sessionDate(), dto.startTime(), endTime, 0L)) {
-            throw new IllegalArgumentException("El terapeuta ya tiene una sesión que entra en conflicto con este horario.");
+        Plan plan = patient.getIdPlan();
+        if (plan == null) {
+            throw new IllegalArgumentException("El paciente no tiene un plan asignado.");
         }
 
-        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                room.getIdRoom(), dto.sessionDate(), dto.startTime(), endTime, 0L)) {
-            throw new IllegalArgumentException("La sala ya está ocupada en este horario.");
+        int numSessionsPerWeek = plan.getNumOfSessions();
+        if (numSessionsPerWeek <= 0) {
+            throw new IllegalArgumentException("El plan debe tener al menos una sesión semanal.");
         }
 
-        Session session = new Session();
-        session.setSessionDate(dto.sessionDate());
-        session.setStartTime(dto.startTime());
-        session.setEndTime(endTime);
-        session.setPatient(patient);
-        session.setTherapist(therapist);
-        session.setRoom(room);
-        session.setPlan(plan);
-        return sessionRepository.save(session);
+        if (dto.firstWeekDates().size() != numSessionsPerWeek) {
+            throw new IllegalArgumentException("Debe proporcionar exactamente " + numSessionsPerWeek + " fechas para la primera semana.");
+        }
+
+        Session firstCreatedSession = null;
+
+        for (LocalDate date : dto.firstWeekDates()) {
+            if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndStartTime(
+                    therapist.getIdUser(), date, dto.startTime()) ||
+                    sessionRepository.existsByRoom_IdRoomAndSessionDateAndStartTime(
+                            room.getIdRoom(), date, dto.startTime()) ||
+                    sessionRepository.existsByPatient_IdPatientAndSessionDateAndStartTime(
+                            patient.getIdPatient(), date, dto.startTime())) {
+                System.err.println("Conflicto detectado al intentar registrar la sesión en: " +
+                        "Terapeuta: " + therapist.getName() + ", Sala: " + room.getName() +
+                        ", Fecha y Hora: " + date + " " + dto.startTime());
+                continue;
+            }
+
+            Session session = new Session();
+            session.setSessionDate(date);
+            session.setStartTime(dto.startTime());
+            session.setEndTime(dto.startTime().plusMinutes(50));
+            session.setPatient(patient);
+            session.setTherapist(therapist);
+            session.setPlan(plan);
+            session.setRoom(room);
+            session.setTherapistPresent(false);
+            session.setPatientPresent(false);
+
+            if (firstCreatedSession == null) {
+                firstCreatedSession = sessionRepository.save(session);
+            } else {
+                sessionRepository.save(session);
+            }
+        }
+
+        return firstCreatedSession;
     }
 
     @Override
@@ -149,6 +176,12 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findByIdSession(dto.sessionId())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
 
+        boolean noChange = (session.isTherapistPresent() == dto.therapistPresent() &&
+                session.isPatientPresent() == dto.patientPresent());
+        if (noChange) {
+            throw new IllegalArgumentException("No hay cambios en los datos de presencia.");
+        }
+
         session.setTherapistPresent(dto.therapistPresent());
         session.setPatientPresent(dto.patientPresent());
 
@@ -168,39 +201,69 @@ public class SessionServiceImpl implements SessionService {
             throw new IllegalArgumentException("El paciente no tiene un plan válido asociado a la sesión");
         }
 
-        List<LocalDate> sessionDates = calculateWeeklySessionDates(startDate);
+        int numOfSessionsPerWeek = plan.getNumOfSessions();
+        if (numOfSessionsPerWeek <= 0) {
+            throw new IllegalArgumentException("El plan debe tener al menos una sesión semanal");
+        }
 
-        for (LocalDate sessionDate : sessionDates) {
-            if (sessionDate.isEqual(startDate)) {
-                continue;
+        for (int week = 0; week < 4; week++) {
+            LocalDate weekStartDate = startDate.plusWeeks(week);
+
+            for (int sessionIndex = 0; sessionIndex < numOfSessionsPerWeek; sessionIndex++) {
+                LocalDate sessionDate = calculateSessionDateForWeek(weekStartDate, sessionIndex);
+
+                try {
+                    if (sessionDate.isEqual(startDate) && week == 0) {
+                        continue;
+                    }
+
+                    Session newSession = new Session();
+                    newSession.setSessionDate(sessionDate);
+                    newSession.setPatient(patient);
+                    newSession.setPlan(plan);
+                    newSession.setTherapist(initialSession.getTherapist());
+                    newSession.setRoom(initialSession.getRoom());
+                    newSession.setTherapistPresent(false);
+                    newSession.setPatientPresent(false);
+                    newSession.setStartTime(findNextAvailableStartTime(sessionDate, initialSession.getTherapist(), initialSession.getRoom()));
+
+                    sessionRepository.save(newSession);
+                } catch (Exception e) {
+                    System.err.println("Conflicto al asignar sesión: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Calcula la fecha de una sesión dentro de una semana.
+     *
+     * @param weekStartDate Fecha de inicio de la semana
+     * @param sessionIndex Índice de la sesión dentro de esa semana
+     * @return Fecha correspondiente a la sesión
+     */
+
+    private LocalDate calculateSessionDateForWeek(LocalDate weekStartDate, int sessionIndex) {
+        int dayOffset = sessionIndex % 5;
+        return weekStartDate.plusDays(dayOffset);
+    }
+
+    private LocalTime findNextAvailableStartTime(LocalDate date, Therapist therapist, Room room) {
+        LocalTime startTime = LocalTime.of(9, 0);
+        while (startTime.isBefore(LocalTime.of(19, 0))) {
+            LocalTime endTime = startTime.plusMinutes(50);
+
+            if (!sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                    therapist.getIdUser(), date, startTime, endTime, 0L) &&
+                    !sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                            room.getIdRoom(), date, startTime, endTime, 0L)) {
+                return startTime;
             }
 
-            Session newSession = new Session();
-            newSession.setSessionDate(sessionDate);
-            newSession.setPatient(patient);
-            newSession.setPlan(plan);
-            newSession.setTherapist(initialSession.getTherapist());
-            newSession.setRoom(initialSession.getRoom());
-            newSession.setTherapistPresent(false);
-            newSession.setPatientPresent(false);
-            newSession.setEndTime(initialSession.getEndTime());
-            newSession.setStartTime(initialSession.getStartTime());
-
-            sessionRepository.save(newSession);
+            startTime = startTime.plusMinutes(60);
         }
+        throw new IllegalArgumentException("No hay horarios disponibles para el día: " + date);
     }
-
-
-    private List<LocalDate> calculateWeeklySessionDates(LocalDate startDate) {
-        List<LocalDate> dates = new ArrayList<>();
-
-        for (int i = 0; i < 4; i++) {
-            dates.add(startDate.plusWeeks(i));
-        }
-
-        return dates;
-    }
-
 
     @Override
     public List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime) {
