@@ -1,7 +1,6 @@
 package com.plenamente.sgt.domain.dto.SessionDto;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 public record ListSession(
         Long idSession,

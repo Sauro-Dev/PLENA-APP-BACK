@@ -190,6 +190,7 @@ public class SessionServiceImpl implements SessionService {
         }
     }
 
+
     private List<LocalDate> calculateWeeklySessionDates(LocalDate startDate) {
         List<LocalDate> dates = new ArrayList<>();
 

@@ -29,7 +29,6 @@ public class SgtApplication {
 	public CommandLineRunner initDatabase() {
 		return args -> {
 			if (userRepository.findByUsername("admin").isEmpty()) {
-				// Crear un Admin por defecto
 				Admin defaultAdmin = new Admin();
 				defaultAdmin.setName("Lozano");
 				defaultAdmin.setPaternalSurname("Admin");
@@ -56,7 +55,7 @@ public class SgtApplication {
 				planA.setNumOfSessions(1);
 				planB.setNumOfSessions(2);
 				planC.setNumOfSessions(3);
-				planD.setNumOfSessions(4);
+				planD.setNumOfSessions(5);
 				planRepository.save(planA);
 				planRepository.save(planB);
 				planRepository.save(planC);
