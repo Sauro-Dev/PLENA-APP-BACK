@@ -3,6 +3,7 @@ package com.plenamente.sgt.service.impl;
 import com.plenamente.sgt.domain.dto.PatientDto.RegisterPatient;
 import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
+import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Plan;
@@ -10,8 +11,9 @@ import com.plenamente.sgt.domain.entity.Tutor;
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
-import com.plenamente.sgt.infra.repository.TutorRepository;
 import com.plenamente.sgt.service.PatientService;
+import com.plenamente.sgt.service.SessionService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,8 +28,9 @@ public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository patientRepository;
     private final PlanRepository planRepository;
-    private final TutorRepository tutorRepository;
+    private final SessionService sessionService;
 
+    @Transactional
     @Override
     public Patient createPatient(RegisterPatient registerPatient) {
         if (patientRepository.existsByDni(registerPatient.dni())) {
@@ -49,13 +52,25 @@ public class PatientServiceImpl implements PatientService {
         int calculatedAge = Period.between(registerPatient.birthdate(), LocalDate.now()).getYears();
         patient.setAge(calculatedAge);
 
-        List<Tutor> tutors = registerPatient.tutors().stream()
+        List<Tutor> tutors = registerPatient.tutor().stream()
                 .peek(tutor -> tutor.setPatient(patient))
                 .collect(Collectors.toList());
 
         patient.setTutors(tutors);
 
-        return patientRepository.save(patient);
+        Patient savedPatient = patientRepository.save(patient);
+
+        RegisterSession sessionData = new RegisterSession(
+                registerPatient.startTime(),
+                savedPatient.getIdPatient(),
+                registerPatient.therapistId(),
+                registerPatient.roomId(),
+                registerPatient.firstWeekDates()
+        );
+
+        sessionService.createSession(sessionData);
+
+        return savedPatient;
     }
 
     @Override

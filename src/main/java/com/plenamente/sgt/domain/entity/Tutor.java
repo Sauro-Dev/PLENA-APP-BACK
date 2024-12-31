@@ -1,4 +1,4 @@
-package com.plenamente.sgt.domain.entity;  // <- No eliminar
+package com.plenamente.sgt.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -18,7 +18,9 @@ public class Tutor {
     private Long idTutor;
 
     private String fullName;
+    @Column(unique = true)
     private String dni;
+    @Column(unique = true)
     private String phone;
 
     @ManyToOne
