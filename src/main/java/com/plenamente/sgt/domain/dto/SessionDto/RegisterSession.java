@@ -6,7 +6,6 @@ import java.time.LocalTime;
 import java.util.List;
 
 public record RegisterSession(
-        @NotNull LocalDate sessionDate,
         @NotNull LocalTime startTime,
         @NotNull Long patientId,
         @NotNull Long therapistId,

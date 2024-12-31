@@ -30,10 +30,11 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session createSession(RegisterSession dto) {
-        if (isInvalidTime(dto.startTime()) || !isWorkingDay(dto.sessionDate())) {
-            throw new IllegalArgumentException("El horario o día es inválido para programar una sesión.");
+        for (LocalDate date : dto.firstWeekDates()) {
+            if (isInvalidTime(dto.startTime()) || !isWorkingDay(date)) {
+                throw new IllegalArgumentException("Una de las fechas o horarios proporcionados es inválida para programar una sesión.");
+            }
         }
-
         Patient patient = patientRepository.findById(dto.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado"));
         User user = userRepository.findById(dto.therapistId())
@@ -55,6 +56,8 @@ public class SessionServiceImpl implements SessionService {
         for (LocalDate date : dto.firstWeekDates()) {
             validateTherapistAndRoomAvailability(dto.therapistId(), dto.roomId(), date, dto.startTime(), dto.startTime().plusMinutes(50));
         }
+
+
 
         Session firstCreatedSession = null;
         for (LocalDate date : dto.firstWeekDates()) {
