@@ -28,16 +28,13 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public Patient createPatient(RegisterPatient registerPatient) {
-        // Validar si el DNI ya existe
         if (patientRepository.existsByDni(registerPatient.dni())) {
             throw new IllegalArgumentException("El DNI ya está registrado en el sistema.");
         }
 
-        // Obtener el plan asociado
         Plan plan = planRepository.findById(registerPatient.idPlan())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado."));
 
-        // Crear paciente
         Patient patient = new Patient();
         patient.setName(registerPatient.name());
         patient.setPaternalSurname(registerPatient.paternalSurname());
@@ -45,17 +42,15 @@ public class PatientServiceImpl implements PatientService {
         patient.setDni(registerPatient.dni());
         patient.setBirthdate(registerPatient.birthdate());
         patient.setAge(registerPatient.age());
-        patient.setAllergies(registerPatient.allergies());
+        patient.setPresumptiveDiagnosis(registerPatient.presumptiveDiagnosis());
         patient.setIdPlan(plan);
 
-        // Asignar tutores al paciente
         List<Tutor> tutors = registerPatient.tutors().stream()
-                .peek(tutor -> tutor.setPatient(patient)) // Configurar la relación inversa
+                .peek(tutor -> tutor.setPatient(patient))
                 .collect(Collectors.toList());
 
         patient.setTutors(tutors);
 
-        // Guardar el paciente junto con sus tutores
         return patientRepository.save(patient);
     }
 
@@ -94,7 +89,7 @@ public class PatientServiceImpl implements PatientService {
         existingPatient.setDni(updatePatient.dni());
         existingPatient.setBirthdate(updatePatient.birthdate());
         existingPatient.setAge(updatePatient.age());
-        existingPatient.setAllergies(updatePatient.allergies());
+        existingPatient.setPresumptiveDiagnosis(updatePatient.presumptiveDiagnosis());
 
         return patientRepository.save(existingPatient);
     }
@@ -139,7 +134,7 @@ public class PatientServiceImpl implements PatientService {
                 patient.getTutors().stream()
                         .map(tutor -> new TutorDTO(tutor.getFullName(), tutor.getDni(), tutor.getPhone()))
                         .collect(Collectors.toList()),
-                patient.getAllergies(),
+                patient.getPresumptiveDiagnosis(),
                 patient.isStatus()
         );
     }

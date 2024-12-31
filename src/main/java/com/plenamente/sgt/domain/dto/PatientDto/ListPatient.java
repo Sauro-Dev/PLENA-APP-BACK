@@ -13,6 +13,6 @@ public record ListPatient(
         int age,
         Long planId,
         List<TutorDTO> tutors,
-        String allergies,
+        String presumptiveDiagnosis,
         boolean status
 ) {}

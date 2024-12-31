@@ -115,6 +115,12 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.14.2</version>  <!-- Asegúrate de usar una versión compatible -->
+		</dependency>
+
 
 	</dependencies>
 

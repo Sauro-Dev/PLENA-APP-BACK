@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.context.annotation.Bean;
 import java.time.LocalDate;
+import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -31,7 +32,6 @@ public class SgtApplication {
 	public CommandLineRunner initDatabase() {
 		return args -> {
 			if (userRepository.findByUsername("admin").isEmpty()) {
-				// Crear un Admin por defecto
 				Admin defaultAdmin = new Admin();
 				defaultAdmin.setName("Lozano");
 				defaultAdmin.setPaternalSurname("Admin");
@@ -49,20 +49,35 @@ public class SgtApplication {
 
 				userRepository.save(defaultAdmin);
 			}
-			if(planRepository.findAll().isEmpty()) {
+			if (planRepository.findAll().isEmpty()) {
 				Plan planA = new Plan();
-				Plan planB = new Plan();
-				Plan planC = new Plan();
-				Plan planD = new Plan();
-
 				planA.setNumOfSessions(1);
+				planA.setWeeks(4);
+
+				Plan planB = new Plan();
 				planB.setNumOfSessions(2);
+				planB.setWeeks(4);
+
+				Plan planC = new Plan();
 				planC.setNumOfSessions(3);
-				planD.setNumOfSessions(4);
+				planC.setWeeks(4);
+
+				Plan planD = new Plan();
+				planD.setNumOfSessions(5);
+				planD.setWeeks(4);
+
 				planRepository.save(planA);
 				planRepository.save(planB);
 				planRepository.save(planC);
 				planRepository.save(planD);
+			} else {
+				List<Plan> plans = planRepository.findAll();
+				for (Plan plan : plans) {
+					if (plan.getWeeks() == null) {
+						plan.setWeeks(4);
+						planRepository.save(plan);
+					}
+				}
 			}
 		};
 	}

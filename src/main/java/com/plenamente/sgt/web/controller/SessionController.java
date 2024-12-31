@@ -6,7 +6,6 @@ import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.Session;
-import com.plenamente.sgt.domain.entity.User;
 import com.plenamente.sgt.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,7 +27,6 @@ public class SessionController {
     @PostMapping("/register" )
     public ResponseEntity<Session> registerSession(@RequestBody RegisterSession dto) {
         Session session = sessionService.createSession(dto);
-        sessionService.assignSessionsFromSession(session.getIdSession());
         return ResponseEntity.ok(session);
     }
 
@@ -58,6 +56,14 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getSessionsByDate(date));
     }
 
+    @GetMapping("/sessions-by-month")
+    public ResponseEntity<List<ListSession>> getSessionsByMonth(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate) {
+        LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+        List<ListSession> sessions = sessionService.getSessionsByDateRange(startDate, endDate);
+        return ResponseEntity.ok(sessions);
+    }
+
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/presence/{id}")
     public ResponseEntity<Session> markPresence(@PathVariable("id") Long sessionId,
@@ -67,18 +73,6 @@ public class SessionController {
         return ResponseEntity.ok(updatedSession);
     }
 
-    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
-    @PostMapping("/assign-from-session/{sessionId}")
-    public ResponseEntity<String> assignSessionsFromSession(@PathVariable Long sessionId) {
-        try {
-            sessionService.assignSessionsFromSession(sessionId);
-            return ResponseEntity.ok("Sesiones asignadas correctamente a partir de la sesión con ID " + sessionId);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Error al asignar sesiones: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error interno del servidor: " + e.getMessage());
-        }
-    }
 
     @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @GetMapping("/available-therapists")

@@ -36,7 +36,6 @@ public class UserServiceImpl implements UserService {
     public TokenResponse login(LoginRequest request) {
         SecurityContextHolder.clearContext();
 
-        // Autentica al usuario
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -44,19 +43,15 @@ public class UserServiceImpl implements UserService {
                 )
         );
 
-        // Establece el usuario autenticado en el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Recupera el usuario desde el repositorio utilizando el username del request
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + request.getUsername()));
 
-        // Verifica si el usuario está habilitado
         if (!user.isEnabled()) {
             throw new DisabledException("Este usuario ha sido deshabilitado.");
         }
 
-        // Genera el token para el usuario autenticado
         String token = jwtService.getToken((UserDetails) authentication.getPrincipal(), user);
 
 

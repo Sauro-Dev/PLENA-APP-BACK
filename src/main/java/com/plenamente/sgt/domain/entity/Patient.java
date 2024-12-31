@@ -1,5 +1,7 @@
 package com.plenamente.sgt.domain.entity;
 
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,25 +16,27 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class Patient {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPatient;
+
     private String name;
     private String paternalSurname;
     private String maternalSurname;
+    @Column(unique = true)
     private String dni;
     private LocalDate birthdate;
     private int age;
-    private String allergies;
+    private String presumptiveDiagnosis;
 
-
-    private boolean status = true;
-
-    @ManyToOne()
-    @JoinColumn(name = "plan_id")
+    @ManyToOne
+    @JoinColumn(name = "plan_id", nullable = false)
     private Plan idPlan;
 
-    @OneToMany
-    @JoinColumn(name = "patient_id")
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Tutor> tutors;
+
+    private boolean status = true;
 }
