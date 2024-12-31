@@ -53,6 +53,14 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getSessionsByDate(date));
     }
 
+    @GetMapping("/sessions-by-month")
+    public ResponseEntity<List<ListSession>> getSessionsByMonth(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate) {
+        LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+        List<ListSession> sessions = sessionService.getSessionsByDateRange(startDate, endDate);
+        return ResponseEntity.ok(sessions);
+    }
+
     @PutMapping("/presence/{id}")
     public ResponseEntity<Session> markPresence(@PathVariable("id") Long sessionId,
                                                 @RequestBody MarkPresenceSession dto) {

@@ -20,4 +20,5 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     boolean existsByTherapist_IdUserAndSessionDateAndStartTime(Long idUser, LocalDate date, LocalTime startTime);
     boolean existsByRoom_IdRoomAndSessionDateAndStartTime(Long idRoom, LocalDate date, @NotNull LocalTime localTime);
     boolean existsByPatient_IdPatientAndSessionDateAndStartTime(Long idPatient, LocalDate date, @NotNull LocalTime localTime);
+    List<Session> findBySessionDateBetween(LocalDate startDate, LocalDate endDate);
 }

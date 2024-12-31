@@ -13,6 +13,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -142,6 +143,24 @@ public class SessionServiceImpl implements SessionService {
                 .collect(Collectors.toList());
     }
 
+    public List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate) {
+        List<Session> sessions = sessionRepository.findBySessionDateBetween(startDate, endDate);
+        return sessions.stream()
+                .map(session -> new ListSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        formatTime12Hour(session.getStartTime()),
+                        formatTime12Hour(session.getEndTime()),
+                        session.getPatient().getName(),
+                        session.getTherapist().getName(),
+                        session.getRoom().getName(),
+                        session.isRescheduled(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent()
+                ))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public Session updateSession(UpdateSession dto) {
         if (isInvalidTime(dto.startTime())) {
@@ -192,6 +211,7 @@ public class SessionServiceImpl implements SessionService {
     public void assignSessionsFromSession(Long sessionId) {
         Session initialSession = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Sesión inicial no encontrada"));
+
 
         LocalDate startDate = initialSession.getSessionDate();
         Patient patient = initialSession.getPatient();
@@ -287,6 +307,10 @@ public class SessionServiceImpl implements SessionService {
     private boolean isInvalidTime(LocalTime startTime) {
         LocalTime endTime = startTime.plusMinutes(50);
         return !isWithinWorkingHours(startTime, endTime);
+    }
+
+    private boolean isWorkingDay(LocalDate date) {
+        return !(date.getDayOfWeek() == DayOfWeek.SUNDAY);
     }
 
     private boolean isWithinWorkingHours(LocalTime startTime, LocalTime endTime) {
