@@ -211,9 +211,10 @@ public class SessionServiceImpl implements SessionService {
         Session initialSession = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Sesión inicial no encontrada"));
 
-
         LocalDate startDate = initialSession.getSessionDate();
         Patient patient = initialSession.getPatient();
+        Therapist therapist = initialSession.getTherapist();
+        Room room = initialSession.getRoom();
         Plan plan = initialSession.getPlan();
 
         if (plan == null) {
@@ -221,36 +222,48 @@ public class SessionServiceImpl implements SessionService {
         }
 
         int numOfSessionsPerWeek = plan.getNumOfSessions();
-        if (numOfSessionsPerWeek <= 0) {
-            throw new IllegalArgumentException("El plan debe tener al menos una sesión semanal");
-        }
+        int totalSessionsToGenerate = numOfSessionsPerWeek * 4;
+        int totalSessionsGenerated = 0;
 
         for (int week = 0; week < 4; week++) {
             LocalDate weekStartDate = startDate.plusWeeks(week);
 
-            for (int sessionIndex = 0; sessionIndex < numOfSessionsPerWeek; sessionIndex++) {
+            for (int sessionIndex = 0; sessionIndex < numOfSessionsPerWeek && totalSessionsGenerated < totalSessionsToGenerate; sessionIndex++) {
                 LocalDate sessionDate = calculateSessionDateForWeek(weekStartDate, sessionIndex);
 
+                if (sessionDate.equals(startDate) && week == 0) {
+                    continue;
+                }
+
                 try {
-                    if (sessionDate.isEqual(startDate) && week == 0) {
-                        continue;
+                    LocalTime finalStartTime = findNextAvailableStartTime(sessionDate, therapist, room);
+
+                    if (!sessionRepository.existsByTherapist_IdUserAndSessionDateAndStartTime(
+                            therapist.getIdUser(), sessionDate, finalStartTime)) {
+
+                        Session newSession = new Session();
+                        newSession.setSessionDate(sessionDate);
+                        newSession.setStartTime(finalStartTime);
+                        newSession.setEndTime(finalStartTime.plusMinutes(50));
+                        newSession.setPatient(patient);
+                        newSession.setPlan(plan);
+                        newSession.setTherapist(therapist);
+                        newSession.setRoom(room);
+                        newSession.setTherapistPresent(false);
+                        newSession.setPatientPresent(false);
+
+                        sessionRepository.save(newSession);
+                        totalSessionsGenerated++;
                     }
-
-                    Session newSession = new Session();
-                    newSession.setSessionDate(sessionDate);
-                    newSession.setPatient(patient);
-                    newSession.setPlan(plan);
-                    newSession.setTherapist(initialSession.getTherapist());
-                    newSession.setRoom(initialSession.getRoom());
-                    newSession.setTherapistPresent(false);
-                    newSession.setPatientPresent(false);
-                    newSession.setStartTime(findNextAvailableStartTime(sessionDate, initialSession.getTherapist(), initialSession.getRoom()));
-
-                    sessionRepository.save(newSession);
                 } catch (Exception e) {
                     System.err.println("Conflicto al asignar sesión: " + e.getMessage());
                 }
             }
+        }
+
+        if (totalSessionsGenerated != totalSessionsToGenerate) {
+            System.err.println("Cantidad inconsistente: Se esperaban " + totalSessionsToGenerate +
+                    " sesiones, pero se generaron " + totalSessionsGenerated);
         }
     }
 
@@ -263,7 +276,10 @@ public class SessionServiceImpl implements SessionService {
      */
 
     private LocalDate calculateSessionDateForWeek(LocalDate weekStartDate, int sessionIndex) {
-        int dayOffset = sessionIndex % 5;
+        int dayOffset = sessionIndex * 2;
+        if (dayOffset > 4) {
+            dayOffset = sessionIndex + 1;
+        }
         return weekStartDate.plusDays(dayOffset);
     }
 
