@@ -1,7 +1,6 @@
 package com.plenamente.sgt.infra.repository;
 
 import com.plenamente.sgt.domain.entity.Session;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,8 +16,11 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     Optional<Session> findByIdSession(Long idSession);
     boolean existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(Long therapistId, LocalDate sessionDate, LocalTime startTime, LocalTime endTime, Long idSession);
     boolean existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(Long idRoom, LocalDate sessionDate, LocalTime startTime, LocalTime endTime, Long idSession);
-    boolean existsByTherapist_IdUserAndSessionDateAndStartTime(Long idUser, LocalDate date, LocalTime startTime);
-    boolean existsByRoom_IdRoomAndSessionDateAndStartTime(Long idRoom, LocalDate date, @NotNull LocalTime localTime);
-    boolean existsByPatient_IdPatientAndSessionDateAndStartTime(Long idPatient, LocalDate date, @NotNull LocalTime localTime);
     List<Session> findBySessionDateBetween(LocalDate startDate, LocalDate endDate);
+    boolean existsByTherapist_IdUserAndSessionDate(Long therapistId, LocalDate date);
+    boolean existsByRoom_IdRoomAndSessionDate(Long roomId, LocalDate date);
+    boolean existsByTherapist_IdUserAndSessionDateAndIdSessionNot(Long therapistId, LocalDate date, Long sessionId);
+    boolean existsByRoom_IdRoomAndSessionDateAndIdSessionNot(Long roomId, LocalDate date, Long sessionId);
+    boolean existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime);
+    boolean existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime);
 }

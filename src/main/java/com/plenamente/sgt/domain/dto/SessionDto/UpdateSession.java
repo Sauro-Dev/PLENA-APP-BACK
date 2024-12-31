@@ -8,5 +8,7 @@ public record UpdateSession(
         @NotNull Long idSession,
         @NotNull LocalDate sessionDate,
         @NotNull LocalTime startTime,
+        @NotNull Long therapistId,
+        @NotNull Long roomId,
         String reason
 ) {}

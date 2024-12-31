@@ -27,59 +27,43 @@ public class SessionServiceImpl implements SessionService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
 
+
     @Override
     public Session createSession(RegisterSession dto) {
-        if (isInvalidTime(dto.startTime())) {
-            throw new IllegalArgumentException("El horario está fuera del rango permitido (9:00 a.m - 1:00 p.m y 3:00 p.m - 7:00 p.m)");
+        if (isInvalidTime(dto.startTime()) || !isWorkingDay(dto.sessionDate())) {
+            throw new IllegalArgumentException("El horario o día es inválido para programar una sesión.");
         }
 
         Patient patient = patientRepository.findById(dto.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado"));
-
         User user = userRepository.findById(dto.therapistId())
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        if (!(user instanceof Therapist therapist)) {
-            throw new IllegalArgumentException("El usuario no es un terapeuta");
+                .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado"));
+        if (!(user instanceof Therapist)) {
+            throw new IllegalArgumentException("El usuario no es un terapeuta válido.");
         }
-
         Room room = roomRepository.findById(dto.roomId())
                 .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada"));
 
         Plan plan = patient.getIdPlan();
-        if (plan == null) {
-            throw new IllegalArgumentException("El paciente no tiene un plan asignado.");
+        if (plan == null || plan.getNumOfSessions() <= 0) {
+            throw new IllegalArgumentException("El paciente debe tener un plan válido con sesiones asignadas.");
+        }
+        if (dto.firstWeekDates().size() != plan.getNumOfSessions()) {
+            throw new IllegalArgumentException("Las fechas proporcionadas no coinciden con las sesiones del plan.");
         }
 
-        int numSessionsPerWeek = plan.getNumOfSessions();
-        if (numSessionsPerWeek <= 0) {
-            throw new IllegalArgumentException("El plan debe tener al menos una sesión semanal.");
-        }
-
-        if (dto.firstWeekDates().size() != numSessionsPerWeek) {
-            throw new IllegalArgumentException("Debe proporcionar exactamente " + numSessionsPerWeek + " fechas para la primera semana.");
+        for (LocalDate date : dto.firstWeekDates()) {
+            validateTherapistAndRoomAvailability(dto.therapistId(), dto.roomId(), date, dto.startTime(), dto.startTime().plusMinutes(50));
         }
 
         Session firstCreatedSession = null;
-
         for (LocalDate date : dto.firstWeekDates()) {
-            if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndStartTime(
-                    therapist.getIdUser(), date, dto.startTime()) ||
-                    sessionRepository.existsByRoom_IdRoomAndSessionDateAndStartTime(
-                            room.getIdRoom(), date, dto.startTime()) ||
-                    sessionRepository.existsByPatient_IdPatientAndSessionDateAndStartTime(
-                            patient.getIdPatient(), date, dto.startTime())) {
-                System.err.println("Conflicto detectado al intentar registrar la sesión en: " +
-                        "Terapeuta: " + therapist.getName() + ", Sala: " + room.getName() +
-                        ", Fecha y Hora: " + date + " " + dto.startTime());
-                continue;
-            }
-
             Session session = new Session();
             session.setSessionDate(date);
             session.setStartTime(dto.startTime());
             session.setEndTime(dto.startTime().plusMinutes(50));
             session.setPatient(patient);
-            session.setTherapist(therapist);
+            session.setTherapist((Therapist) user);
             session.setPlan(plan);
             session.setRoom(room);
             session.setTherapistPresent(false);
@@ -94,6 +78,19 @@ public class SessionServiceImpl implements SessionService {
 
         return firstCreatedSession;
     }
+
+    private void validateTherapistAndRoomAvailability(Long therapistId, Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime) {
+        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(
+                therapistId, date, startTime, endTime)) {
+            throw new IllegalArgumentException("El terapeuta ya tiene una sesión programada en este rango de tiempo.");
+        }
+
+        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(
+                roomId, date, startTime, endTime)) {
+            throw new IllegalArgumentException("La sala ya está ocupada en este rango de tiempo.");
+        }
+    }
+
 
     @Override
     public List<ListSession> getSessionsByTherapist(Long therapistId) {
@@ -163,31 +160,30 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session updateSession(UpdateSession dto) {
-        if (isInvalidTime(dto.startTime())) {
-            throw new IllegalArgumentException("El horario está fuera del rango permitido (9:00 a.m - 1:00 p.m y 3:00 p.m - 7:00 p.m)");
-        }
-
         Session session = sessionRepository.findByIdSession(dto.idSession())
-                .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada."));
 
-        LocalTime endTime = dto.startTime().plusMinutes(50);
-        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                session.getTherapist().getIdUser(), dto.sessionDate(), dto.startTime(), endTime, dto.idSession())) {
-            throw new IllegalArgumentException("El terapeuta ya tiene una sesión que entra en conflicto con este horario.");
-        }
-
-        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                session.getRoom().getIdRoom(), dto.sessionDate(), dto.startTime(), endTime, dto.idSession())) {
-            throw new IllegalArgumentException("La sala ya está ocupada en este horario.");
-        }
+        validateTherapistAndRoomAvailabilityUpdate(dto.therapistId(), dto.roomId(), dto.sessionDate(), dto.startTime(), dto.startTime().plusMinutes(50), dto.idSession());
 
         session.setSessionDate(dto.sessionDate());
         session.setStartTime(dto.startTime());
-        session.setEndTime(endTime);
+        session.setEndTime(dto.startTime().plusMinutes(50));
         session.setReason(dto.reason());
         session.setRescheduled(true);
 
         return sessionRepository.save(session);
+    }
+
+    private void validateTherapistAndRoomAvailabilityUpdate(Long therapistId, Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime, Long sessionId) {
+        if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                therapistId, date, startTime, endTime, sessionId)) {
+            throw new IllegalArgumentException("El terapeuta ya tiene una sesión programada en este rango de tiempo.");
+        }
+
+        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                roomId, date, startTime, endTime, sessionId)) {
+            throw new IllegalArgumentException("La sala ya está ocupada en este rango de tiempo.");
+        }
     }
 
     @Override
