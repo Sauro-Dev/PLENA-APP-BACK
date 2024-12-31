@@ -44,7 +44,8 @@ public class SessionController {
                 idSession,
                 dto.sessionDate(),
                 dto.startTime(),
-                dto.endTime(),
+                dto.therapistId(),
+                dto.roomId(),
                 dto.reason()
         );
 
