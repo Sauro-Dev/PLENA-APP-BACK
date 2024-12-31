@@ -15,6 +15,8 @@ import com.plenamente.sgt.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,9 +43,11 @@ public class PatientServiceImpl implements PatientService {
         patient.setMaternalSurname(registerPatient.maternalSurname());
         patient.setDni(registerPatient.dni());
         patient.setBirthdate(registerPatient.birthdate());
-        patient.setAge(registerPatient.age());
         patient.setPresumptiveDiagnosis(registerPatient.presumptiveDiagnosis());
         patient.setIdPlan(plan);
+
+        int calculatedAge = Period.between(registerPatient.birthdate(), LocalDate.now()).getYears();
+        patient.setAge(calculatedAge);
 
         List<Tutor> tutors = registerPatient.tutors().stream()
                 .peek(tutor -> tutor.setPatient(patient))
@@ -88,8 +92,10 @@ public class PatientServiceImpl implements PatientService {
         existingPatient.setMaternalSurname(updatePatient.maternalSurname());
         existingPatient.setDni(updatePatient.dni());
         existingPatient.setBirthdate(updatePatient.birthdate());
-        existingPatient.setAge(updatePatient.age());
         existingPatient.setPresumptiveDiagnosis(updatePatient.presumptiveDiagnosis());
+
+        int calculatedAge = Period.between(updatePatient.birthdate(), LocalDate.now()).getYears();
+        existingPatient.setAge(calculatedAge);
 
         return patientRepository.save(existingPatient);
     }
