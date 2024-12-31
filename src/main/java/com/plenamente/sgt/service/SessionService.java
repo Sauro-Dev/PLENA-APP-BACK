@@ -17,7 +17,6 @@ public interface SessionService {
     List<ListSession> getSessionsByDate(LocalDate date);
     List<ListSession> getSessionsByTherapist(Long therapistId);
     Session markPresence(MarkPresenceSession dto);
-    void assignSessionsFromSession(Long sessionId);
     List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime);
     List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
 }

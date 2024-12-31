@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,32 +36,48 @@ public class SessionServiceImpl implements SessionService {
                 throw new IllegalArgumentException("Una de las fechas o horarios proporcionados es inválida para programar una sesión.");
             }
         }
+
         Patient patient = patientRepository.findById(dto.patientId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado"));
+
         User user = userRepository.findById(dto.therapistId())
                 .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado"));
         if (!(user instanceof Therapist)) {
             throw new IllegalArgumentException("El usuario no es un terapeuta válido.");
         }
+
         Room room = roomRepository.findById(dto.roomId())
                 .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada"));
 
         Plan plan = patient.getIdPlan();
-        if (plan == null || plan.getNumOfSessions() <= 0) {
-            throw new IllegalArgumentException("El paciente debe tener un plan válido con sesiones asignadas.");
+        if (plan == null || plan.getNumOfSessions() == null || plan.getWeeks() == null) {
+            throw new IllegalArgumentException("El paciente debe tener un plan válido con sesiones asignadas y una duración de semanas definida.");
         }
-        if (dto.firstWeekDates().size() != plan.getNumOfSessions()) {
-            throw new IllegalArgumentException("Las fechas proporcionadas no coinciden con las sesiones del plan.");
+
+        if (plan.getNumOfSessions() <= 0 || plan.getWeeks() <= 0) {
+            throw new IllegalArgumentException("El plan del paciente debe tener un número válido de sesiones por semana y una duración positiva en semanas.");
         }
 
         for (LocalDate date : dto.firstWeekDates()) {
             validateTherapistAndRoomAvailability(dto.therapistId(), dto.roomId(), date, dto.startTime(), dto.startTime().plusMinutes(50));
         }
 
-
+        int numOfWeeks = plan.getWeeks();
+        int sessionsPerWeek = plan.getNumOfSessions();
+        List<LocalDate> allDates = generateSessionDates(dto.firstWeekDates(), numOfWeeks, sessionsPerWeek);
 
         Session firstCreatedSession = null;
-        for (LocalDate date : dto.firstWeekDates()) {
+        for (LocalDate date : allDates) {
+            if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(
+                    dto.therapistId(), date, dto.startTime(), dto.startTime().plusMinutes(50))) {
+                throw new IllegalArgumentException("Ya existe una sesión programada para el terapeuta en esta fecha y hora.");
+            }
+
+            if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(
+                    dto.roomId(), date, dto.startTime(), dto.startTime().plusMinutes(50))) {
+                throw new IllegalArgumentException("La sala ya está ocupada en esta fecha y hora.");
+            }
+
             Session session = new Session();
             session.setSessionDate(date);
             session.setStartTime(dto.startTime());
@@ -80,6 +97,20 @@ public class SessionServiceImpl implements SessionService {
         }
 
         return firstCreatedSession;
+    }
+
+    private List<LocalDate> generateSessionDates(List<LocalDate> firstWeekDates, int numOfWeeks, int sessionsPerWeek) {
+        if (firstWeekDates.size() != sessionsPerWeek) {
+            throw new IllegalArgumentException("El número de fechas proporcionadas no coincide con las sesiones semanales del plan.");
+        }
+
+        List<LocalDate> allDates = new ArrayList<>();
+        for (int week = 0; week < numOfWeeks; week++) {
+            for (LocalDate date : firstWeekDates) {
+                allDates.add(date.plusWeeks(week));
+            }
+        }
+        return allDates;
     }
 
     private void validateTherapistAndRoomAvailability(Long therapistId, Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime) {
@@ -206,91 +237,6 @@ public class SessionServiceImpl implements SessionService {
         return sessionRepository.save(session);
     }
 
-    @Override
-    public void assignSessionsFromSession(Long sessionId) {
-        Session initialSession = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Sesión inicial no encontrada"));
-
-        LocalDate startDate = initialSession.getSessionDate();
-        LocalTime startTime = initialSession.getStartTime();
-        Patient patient = initialSession.getPatient();
-        Therapist therapist = initialSession.getTherapist();
-        Room room = initialSession.getRoom();
-        Plan plan = initialSession.getPlan();
-
-        if (plan == null) {
-            throw new IllegalArgumentException("El paciente no tiene un plan válido asociado a la sesión");
-        }
-
-        int numOfSessionsPerWeek = plan.getNumOfSessions();
-        int totalSessionsToGenerate = numOfSessionsPerWeek * 4;
-        int totalSessionsGenerated = 0;
-
-        List<DayOfWeek> selectedDays = List.of(DayOfWeek.MONDAY,DayOfWeek.TUESDAY,DayOfWeek.WEDNESDAY,DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY);
-
-        for (int week = 0; week < 4; week++) {
-            LocalDate weekStartDate = startDate.plusWeeks(week);
-
-            for (int sessionIndex = 0; sessionIndex < numOfSessionsPerWeek && totalSessionsGenerated < totalSessionsToGenerate; sessionIndex++) {
-                try {
-                    LocalDate sessionDate = calculateSessionDate(weekStartDate, selectedDays, sessionIndex);
-
-                    validateTherapistAndRoomAvailability(
-                            therapist.getIdUser(),
-                            room.getIdRoom(),
-                            sessionDate,
-                            startTime,
-                            startTime.plusMinutes(50)
-                    );
-
-                    Session newSession = new Session();
-                    newSession.setSessionDate(sessionDate);
-                    newSession.setStartTime(startTime);
-                    newSession.setEndTime(startTime.plusMinutes(50));
-                    newSession.setPatient(patient);
-                    newSession.setPlan(plan);
-                    newSession.setTherapist(therapist);
-                    newSession.setRoom(room);
-                    newSession.setTherapistPresent(false);
-                    newSession.setPatientPresent(false);
-
-                    sessionRepository.save(newSession);
-                    totalSessionsGenerated++;
-                } catch (Exception e) {
-                    System.err.println("Conflicto al asignar sesión: " + e.getMessage());
-                }
-            }
-        }
-
-        if (totalSessionsGenerated != totalSessionsToGenerate) {
-            System.err.println("Cantidad inconsistente: Se esperaban " + totalSessionsToGenerate +
-                    " sesiones, pero se generaron " + totalSessionsGenerated);
-        }
-    }
-
-    private LocalDate calculateSessionDate(LocalDate weekStartDate, List<DayOfWeek> selectedDays, int sessionIndex) {
-        if (selectedDays == null || selectedDays.isEmpty()) {
-            throw new IllegalArgumentException("Debe especificar al menos un día para las sesiones.");
-        }
-
-        if (selectedDays.stream().anyMatch(day -> day == DayOfWeek.SUNDAY)) {
-            throw new IllegalArgumentException("Las sesiones no pueden ser programadas los domingos.");
-        }
-
-        if (sessionIndex >= selectedDays.size()) {
-            throw new IllegalArgumentException("El índice de la sesión excede los días seleccionados disponibles.");
-        }
-
-        DayOfWeek selectedDay = selectedDays.get(sessionIndex);
-
-        LocalDate sessionDate = weekStartDate.with(selectedDay);
-
-        if (isNotWorkingDay(sessionDate)) {
-            throw new IllegalArgumentException("El día seleccionado no es válido para programar sesiones.");
-        }
-
-        return sessionDate;
-    }
 
     @Override
     public List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime) {
