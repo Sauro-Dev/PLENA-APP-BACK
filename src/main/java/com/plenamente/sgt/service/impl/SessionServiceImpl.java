@@ -202,6 +202,10 @@ public class SessionServiceImpl implements SessionService {
         session.setSessionDate(dto.sessionDate());
         session.setStartTime(dto.startTime());
         session.setEndTime(dto.startTime().plusMinutes(50));
+        session.setTherapist((Therapist) userRepository.findById(dto.therapistId())
+                .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado.")));
+        session.setRoom(roomRepository.findById(dto.roomId())
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada.")));
         session.setReason(dto.reason());
         session.setRescheduled(true);
 
@@ -209,14 +213,14 @@ public class SessionServiceImpl implements SessionService {
     }
 
     private void validateTherapistAndRoomAvailabilityUpdate(Long therapistId, Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime, Long sessionId) {
+        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
+                roomId, date, startTime, endTime, sessionId)) {
+            throw new IllegalArgumentException("La sala ya está ocupada por otra sesión en este rango de tiempo.");
+        }
+
         if (sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
                 therapistId, date, startTime, endTime, sessionId)) {
             throw new IllegalArgumentException("El terapeuta ya tiene una sesión programada en este rango de tiempo.");
-        }
-
-        if (sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                roomId, date, startTime, endTime, sessionId)) {
-            throw new IllegalArgumentException("La sala ya está ocupada en este rango de tiempo.");
         }
     }
 
