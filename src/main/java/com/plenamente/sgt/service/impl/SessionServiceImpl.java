@@ -31,7 +31,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public Session createSession(RegisterSession dto) {
         for (LocalDate date : dto.firstWeekDates()) {
-            if (isInvalidTime(dto.startTime()) || !isWorkingDay(date)) {
+            if (isInvalidTime(dto.startTime()) || isNotWorkingDay(date)) {
                 throw new IllegalArgumentException("Una de las fechas o horarios proporcionados es inválida para programar una sesión.");
             }
         }
@@ -212,6 +212,7 @@ public class SessionServiceImpl implements SessionService {
                 .orElseThrow(() -> new IllegalArgumentException("Sesión inicial no encontrada"));
 
         LocalDate startDate = initialSession.getSessionDate();
+        LocalTime startTime = initialSession.getStartTime();
         Patient patient = initialSession.getPatient();
         Therapist therapist = initialSession.getTherapist();
         Room room = initialSession.getRoom();
@@ -225,36 +226,36 @@ public class SessionServiceImpl implements SessionService {
         int totalSessionsToGenerate = numOfSessionsPerWeek * 4;
         int totalSessionsGenerated = 0;
 
+        List<DayOfWeek> selectedDays = List.of(DayOfWeek.MONDAY,DayOfWeek.TUESDAY,DayOfWeek.WEDNESDAY,DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY);
+
         for (int week = 0; week < 4; week++) {
             LocalDate weekStartDate = startDate.plusWeeks(week);
 
             for (int sessionIndex = 0; sessionIndex < numOfSessionsPerWeek && totalSessionsGenerated < totalSessionsToGenerate; sessionIndex++) {
-                LocalDate sessionDate = calculateSessionDateForWeek(weekStartDate, sessionIndex);
-
-                if (sessionDate.equals(startDate) && week == 0) {
-                    continue;
-                }
-
                 try {
-                    LocalTime finalStartTime = findNextAvailableStartTime(sessionDate, therapist, room);
+                    LocalDate sessionDate = calculateSessionDate(weekStartDate, selectedDays, sessionIndex);
 
-                    if (!sessionRepository.existsByTherapist_IdUserAndSessionDateAndStartTime(
-                            therapist.getIdUser(), sessionDate, finalStartTime)) {
+                    validateTherapistAndRoomAvailability(
+                            therapist.getIdUser(),
+                            room.getIdRoom(),
+                            sessionDate,
+                            startTime,
+                            startTime.plusMinutes(50)
+                    );
 
-                        Session newSession = new Session();
-                        newSession.setSessionDate(sessionDate);
-                        newSession.setStartTime(finalStartTime);
-                        newSession.setEndTime(finalStartTime.plusMinutes(50));
-                        newSession.setPatient(patient);
-                        newSession.setPlan(plan);
-                        newSession.setTherapist(therapist);
-                        newSession.setRoom(room);
-                        newSession.setTherapistPresent(false);
-                        newSession.setPatientPresent(false);
+                    Session newSession = new Session();
+                    newSession.setSessionDate(sessionDate);
+                    newSession.setStartTime(startTime);
+                    newSession.setEndTime(startTime.plusMinutes(50));
+                    newSession.setPatient(patient);
+                    newSession.setPlan(plan);
+                    newSession.setTherapist(therapist);
+                    newSession.setRoom(room);
+                    newSession.setTherapistPresent(false);
+                    newSession.setPatientPresent(false);
 
-                        sessionRepository.save(newSession);
-                        totalSessionsGenerated++;
-                    }
+                    sessionRepository.save(newSession);
+                    totalSessionsGenerated++;
                 } catch (Exception e) {
                     System.err.println("Conflicto al asignar sesión: " + e.getMessage());
                 }
@@ -267,37 +268,28 @@ public class SessionServiceImpl implements SessionService {
         }
     }
 
-    /**
-     * Calcula la fecha de una sesión dentro de una semana.
-     *
-     * @param weekStartDate Fecha de inicio de la semana
-     * @param sessionIndex Índice de la sesión dentro de esa semana
-     * @return Fecha correspondiente a la sesión
-     */
-
-    private LocalDate calculateSessionDateForWeek(LocalDate weekStartDate, int sessionIndex) {
-        int dayOffset = sessionIndex * 2;
-        if (dayOffset > 4) {
-            dayOffset = sessionIndex + 1;
+    private LocalDate calculateSessionDate(LocalDate weekStartDate, List<DayOfWeek> selectedDays, int sessionIndex) {
+        if (selectedDays == null || selectedDays.isEmpty()) {
+            throw new IllegalArgumentException("Debe especificar al menos un día para las sesiones.");
         }
-        return weekStartDate.plusDays(dayOffset);
-    }
 
-    private LocalTime findNextAvailableStartTime(LocalDate date, Therapist therapist, Room room) {
-        LocalTime startTime = LocalTime.of(9, 0);
-        while (startTime.isBefore(LocalTime.of(19, 0))) {
-            LocalTime endTime = startTime.plusMinutes(50);
-
-            if (!sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                    therapist.getIdUser(), date, startTime, endTime, 0L) &&
-                    !sessionRepository.existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
-                            room.getIdRoom(), date, startTime, endTime, 0L)) {
-                return startTime;
-            }
-
-            startTime = startTime.plusMinutes(60);
+        if (selectedDays.stream().anyMatch(day -> day == DayOfWeek.SUNDAY)) {
+            throw new IllegalArgumentException("Las sesiones no pueden ser programadas los domingos.");
         }
-        throw new IllegalArgumentException("No hay horarios disponibles para el día: " + date);
+
+        if (sessionIndex >= selectedDays.size()) {
+            throw new IllegalArgumentException("El índice de la sesión excede los días seleccionados disponibles.");
+        }
+
+        DayOfWeek selectedDay = selectedDays.get(sessionIndex);
+
+        LocalDate sessionDate = weekStartDate.with(selectedDay);
+
+        if (isNotWorkingDay(sessionDate)) {
+            throw new IllegalArgumentException("El día seleccionado no es válido para programar sesiones.");
+        }
+
+        return sessionDate;
     }
 
     @Override
@@ -324,8 +316,8 @@ public class SessionServiceImpl implements SessionService {
         return !isWithinWorkingHours(startTime, endTime);
     }
 
-    private boolean isWorkingDay(LocalDate date) {
-        return !(date.getDayOfWeek() == DayOfWeek.SUNDAY);
+    private boolean isNotWorkingDay(LocalDate date) {
+        return date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
     private boolean isWithinWorkingHours(LocalTime startTime, LocalTime endTime) {
