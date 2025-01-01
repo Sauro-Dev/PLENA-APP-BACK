@@ -13,10 +13,16 @@ import java.util.List;
 
 public interface SessionService {
     Session createSession(RegisterSession dto);
+
     Session updateSession(UpdateSession dto);
+
     List<ListSession> getSessionsByDate(LocalDate date);
+
     List<ListSession> getSessionsByTherapist(Long therapistId);
+
     Session markPresence(MarkPresenceSession dto);
+
     List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime);
+
     List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
 }

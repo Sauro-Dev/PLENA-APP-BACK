@@ -44,7 +44,11 @@ public abstract class User implements UserDetails {
     private String phoneBackup;
     private LocalDate birthdate;
     private boolean enabled = true;
+    private boolean isTherapist;
 
+    public void setIsTherapist(boolean isTherapist) {
+        this.isTherapist = isTherapist;
+    }
 
     @Getter
     @Setter

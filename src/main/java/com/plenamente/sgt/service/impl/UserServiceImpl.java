@@ -1,6 +1,7 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.UserDto.*;
+import com.plenamente.sgt.domain.entity.AdminTherapist;
 import com.plenamente.sgt.domain.entity.Secretary;
 import com.plenamente.sgt.domain.entity.Therapist;
 import com.plenamente.sgt.domain.entity.User;
@@ -100,6 +101,13 @@ public class UserServiceImpl implements UserService {
                 secretary.setPaymentMonthly(paymentMonthly);
             } else {
                 throw new IllegalArgumentException("El campo paymentMonthly es obligatorio para Secretario.");
+            }
+        } else if (user instanceof AdminTherapist adminTherapist) {
+            Double paymentSession = data.paymentSession();
+            if (paymentSession != null) {
+                adminTherapist.setPaymentSession(paymentSession);
+            } else {
+                throw new IllegalArgumentException("El campo paymentSession es obligatorio para AdminTherapist.");
             }
         }
 
@@ -266,4 +274,18 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public boolean existsByDni(String dni) {
+        return userRepository.existsByDni(dni);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    public List<User> getAllTherapyCapableUsers() {
+        return userRepository.findByIsTherapistTrue();
+    }
 }

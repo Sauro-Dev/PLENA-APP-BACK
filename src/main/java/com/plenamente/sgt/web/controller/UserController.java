@@ -1,6 +1,7 @@
 package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.UserDto.*;
+import com.plenamente.sgt.domain.entity.User;
 import com.plenamente.sgt.infra.security.LoginRequest;
 import com.plenamente.sgt.infra.security.TokenResponse;
 import com.plenamente.sgt.service.UserService;
@@ -14,7 +15,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -96,6 +100,28 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Boolean>> validate(
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String email
+    ) {
+        boolean dniTaken = false;
+        boolean emailTaken = false;
+
+        if (dni != null && !dni.isBlank()) {
+            dniTaken = userService.existsByDni(dni);
+        }
+        if (email != null && !email.isBlank()) {
+            emailTaken = userService.existsByEmail(email);
+        }
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("dniTaken", dniTaken);
+        response.put("emailTaken", emailTaken);
+
+        return ResponseEntity.ok(response);
+    }
+
     private String getAuthenticatedUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -108,5 +134,9 @@ public class UserController {
         }
     }
 
+    @GetMapping("/therapists")
+    public List<User> getAllTherapyCapableUsers() {
+        return userService.getAllTherapyCapableUsers();
+    }
 }
 

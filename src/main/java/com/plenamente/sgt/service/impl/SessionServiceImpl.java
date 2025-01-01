@@ -240,7 +240,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime) {
-        List<User> therapists = userRepository.findByRol(Rol.THERAPIST);
+        List<User> therapists = userRepository.findByIsTherapistTrue();
 
         return therapists.stream()
                 .filter(therapist -> isTherapistAvailable(therapist.getIdUser(), date, startTime, endTime))
@@ -248,7 +248,8 @@ public class SessionServiceImpl implements SessionService {
                         therapist.getIdUser(),
                         therapist.getUsername(),
                         therapist.getName()
-                )).collect(Collectors.toList());
+                ))
+                .collect(Collectors.toList());
     }
 
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {

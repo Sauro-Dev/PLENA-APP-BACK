@@ -9,11 +9,15 @@ import com.plenamente.sgt.domain.entity.User;
 
 public class UserFactory {
     public static User createUser(Rol role, boolean isAlsoTherapist) {
-        return switch (role) {
+        User user = switch (role) {
             case THERAPIST -> new Therapist();
             case SECRETARY -> new Secretary();
-            case ADMIN -> isAlsoTherapist ? new AdminTherapist() : new Admin(); // Crear AdminTherapist si es admin y terapeuta
+            case ADMIN -> isAlsoTherapist ? new AdminTherapist() : new Admin();
             default -> throw new IllegalArgumentException("Rol no soportado: " + role);
         };
+
+        user.setIsTherapist(isAlsoTherapist || role == Rol.THERAPIST);
+        user.setRol(role);
+        return user;
     }
 }

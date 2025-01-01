@@ -24,7 +24,7 @@ public class SessionController {
     private final SessionService sessionService;
 
     @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
-    @PostMapping("/register" )
+    @PostMapping("/register")
     public ResponseEntity<Session> registerSession(@RequestBody RegisterSession dto) {
         Session session = sessionService.createSession(dto);
         return ResponseEntity.ok(session);
@@ -80,7 +80,7 @@ public class SessionController {
     public ResponseEntity<List<ListTherapist>> getAvailableTherapists(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sessionDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime){
 
         List<ListTherapist> availableTherapists = sessionService.getAvailableTherapist(sessionDate, startTime, endTime);
         return ResponseEntity.ok(availableTherapists);

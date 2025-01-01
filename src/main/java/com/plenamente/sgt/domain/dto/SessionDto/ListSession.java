@@ -13,4 +13,5 @@ public record ListSession(
         boolean rescheduled,
         boolean therapistPresent,
         boolean patientPresent
-) {}
+) {
+}

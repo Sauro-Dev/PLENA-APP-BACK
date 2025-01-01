@@ -1,6 +1,7 @@
 package com.plenamente.sgt.domain.dto.SessionDto;
 
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -11,4 +12,5 @@ public record RegisterSession(
         @NotNull Long therapistId,
         @NotNull Long roomId,
         @NotNull List<LocalDate> firstWeekDates
-) {}
+) {
+}

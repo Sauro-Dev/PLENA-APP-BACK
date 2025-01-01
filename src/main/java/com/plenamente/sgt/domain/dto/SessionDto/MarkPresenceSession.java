@@ -6,5 +6,6 @@ public record MarkPresenceSession(
         @NotNull Long sessionId,
         boolean therapistPresent,
         boolean patientPresent
-) {}
+) {
+}
 
