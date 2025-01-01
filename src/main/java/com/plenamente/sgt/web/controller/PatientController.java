@@ -27,7 +27,7 @@ public class PatientController {
         try {
             Patient patient = patientService.createPatient(registerPatient);
             return ResponseEntity.ok(patient);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
         }
     }

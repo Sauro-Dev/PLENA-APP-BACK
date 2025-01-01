@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public record RegisterPatient(
@@ -16,6 +17,10 @@ public record RegisterPatient(
         @Null @Length(max = 255) String presumptiveDiagnosis,
         boolean status,
         @NotNull Long idPlan,
-        @NotEmpty @Size(min = 1, max = 2) List<Tutor> tutors
+        @NotEmpty @Size(min = 1, max = 2) List<Tutor> tutor,
+        @NotNull Long therapistId,
+        @NotNull Long roomId,
+        @NotNull LocalTime startTime,
+        @NotNull List<LocalDate> firstWeekDates
 ) {
 }
