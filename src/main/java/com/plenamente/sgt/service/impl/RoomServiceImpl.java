@@ -60,7 +60,6 @@ public class RoomServiceImpl implements RoomService {
     public Room updateRoom(Long roomId, @RequestBody Room roomUpdated){
         Room existingRoom = roomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
-        // Actualizar los valores con los datos proporcionados
         if (roomUpdated.getName() != null) {
             existingRoom.setName(roomUpdated.getName());
         }
@@ -71,8 +70,17 @@ public class RoomServiceImpl implements RoomService {
             existingRoom.setIsTherapeutic(roomUpdated.getIsTherapeutic());
         }
 
-        // Guardar los cambios en la base de datos
         return roomRepository.save(existingRoom);
+    }
+
+    @Override
+    public String disableRoom(Long roomId) {
+        return "";
+    }
+
+    @Override
+    public String enableRoom(Long roomId) {
+        return "";
     }
 
     @Override
@@ -81,8 +89,8 @@ public class RoomServiceImpl implements RoomService {
                 .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
         List<Material> materials = materialRepository.findByRoom(existingRoom);
         for (Material material : materials) {
-            material.setRoom(null);  // Desasignar material
-            materialRepository.save(material);  // Guardar el cambio
+            material.setRoom(null);
+            materialRepository.save(material);
         }
         roomRepository.deleteById(roomId);
         return "La sala con ID " + roomId + " y nombre '" + existingRoom.getName() + "' fue eliminada exitosamente.";

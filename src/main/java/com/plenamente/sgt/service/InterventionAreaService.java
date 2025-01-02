@@ -18,4 +18,8 @@ public interface InterventionAreaService {
     InterventionArea getInterventionArea(Long id);
 
     List<ListInterventionArea> getInterventionAreaByMaterial(String material);
+
+    void enableInterventionArea(Long id);
+
+    void disableInterventionArea(Long id);
 }

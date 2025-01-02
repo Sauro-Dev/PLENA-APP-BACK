@@ -16,4 +16,8 @@ public class Room {
     private String name;
     private String address;
     private Boolean isTherapeutic;
+
+    @Column(nullable = false)
+    private boolean enabled = true;
 }
+

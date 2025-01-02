@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/v1/intervention-areas")
 @CrossOrigin("")
@@ -37,17 +36,18 @@ public class InterventionAreaController {
         return new ResponseEntity<>(areas, HttpStatus.OK);
     }
 
+    // Borrado lógico (deshabilitar) área de intervención
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<InterventionArea> deleteInterventionArea(@PathVariable Long id) {
+    public ResponseEntity<String> deleteInterventionArea(@PathVariable Long id) {
         interventionAreaService.deleteInterventionArea(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok("Área de intervención con ID " + id + " deshabilitada correctamente.");
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
-    public ResponseEntity<InterventionArea> updateInterventionArea(@PathVariable Long id, @RequestBody CreateAreaForIntervention createInterventionArea){
-        interventionAreaService.updateInterventionArea(id,createInterventionArea);
+    public ResponseEntity<InterventionArea> updateInterventionArea(@PathVariable Long id, @RequestBody CreateAreaForIntervention createInterventionArea) {
+        interventionAreaService.updateInterventionArea(id, createInterventionArea);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -68,5 +68,19 @@ public class InterventionAreaController {
     public ResponseEntity<List<ListInterventionArea>> getInterventionArea(@PathVariable("id") String materialId) {
         List<ListInterventionArea> interventionArea = interventionAreaService.getInterventionAreaByMaterial(materialId);
         return ResponseEntity.ok(interventionArea);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/enable/{id}")
+    public ResponseEntity<String> enableInterventionArea(@PathVariable Long id) {
+        interventionAreaService.enableInterventionArea(id);
+        return ResponseEntity.ok("Área de intervención con ID " + id + " reactivada correctamente.");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/disable/{id}")
+    public ResponseEntity<String> disableInterventionArea(@PathVariable Long id) {
+        interventionAreaService.disableInterventionArea(id);
+        return ResponseEntity.ok("Área de intervención con ID " + id + " deshabilitada correctamente.");
     }
 }

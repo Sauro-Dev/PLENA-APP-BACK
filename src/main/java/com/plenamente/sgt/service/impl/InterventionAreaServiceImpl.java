@@ -4,7 +4,6 @@ import com.plenamente.sgt.domain.dto.InterventionAreaDto.CreateAreaForInterventi
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.ListInterventionArea;
 import com.plenamente.sgt.domain.entity.InterventionArea;
 import com.plenamente.sgt.domain.entity.Material;
-import com.plenamente.sgt.domain.entity.MaterialArea;
 import com.plenamente.sgt.infra.repository.InterventionAreaRepository;
 import com.plenamente.sgt.infra.repository.MaterialAreaRepository;
 import com.plenamente.sgt.infra.repository.MaterialRepository;
@@ -33,16 +32,13 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
         InterventionArea interventionArea = new InterventionArea();
         interventionArea.setName(name);
         interventionArea.setDescription(description);
+        interventionArea.setEnabled(true); // Al crear, habilitado por defecto
         return interventionAreaRepository.save(interventionArea);
     }
 
     @Override
     public List<ListInterventionArea> getAllInterventionAreas() {
-        List<InterventionArea> interventionAreas = interventionAreaRepository.findAll();
-
-        for (InterventionArea area : interventionAreas) {
-            Hibernate.initialize(area.getMaterialAreas());
-        }
+        List<InterventionArea> interventionAreas = interventionAreaRepository.findByEnabledTrue();
         return interventionAreas.stream()
                 .map(interventionAreaMapper::toDTO)
                 .collect(Collectors.toList());
@@ -50,16 +46,17 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
 
     @Override
     public InterventionArea deleteInterventionArea(Long id){
-        InterventionArea ExisArea=interventionAreaRepository.findById(id)
-                .orElseThrow(()->new EntityNotFoundException("Intervention Area no encontrado con id: " + id));
-        interventionAreaRepository.delete(ExisArea);
-        return ExisArea;
+        InterventionArea existingArea = interventionAreaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Intervention Area no encontrado con id: " + id));
+
+        existingArea.setEnabled(false);  // Borrado lógico
+        return interventionAreaRepository.save(existingArea);
     }
 
     @Override
-    public InterventionArea updateInterventionArea(Long Id,@RequestBody CreateAreaForIntervention interventionArea) {
-        InterventionArea existingInterventionArea = interventionAreaRepository.findById(Id)
-                .orElseThrow(() -> new EntityNotFoundException("Área de intervención no encontrada con id: " + Id));;
+    public InterventionArea updateInterventionArea(Long id, @RequestBody CreateAreaForIntervention interventionArea) {
+        InterventionArea existingInterventionArea = interventionAreaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Área de intervención no encontrada con id: " + id));
         existingInterventionArea.setName(interventionArea.name());
         existingInterventionArea.setDescription(interventionArea.description());
         return interventionAreaRepository.save(existingInterventionArea);
@@ -68,7 +65,7 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
     @Override
     public InterventionArea getInterventionArea(Long id) {
         InterventionArea existingInterventionArea = interventionAreaRepository.findById(id)
-                .orElseThrow(()->new EntityNotFoundException("La area de intervención no fue encontrada"+id));
+                .orElseThrow(() -> new EntityNotFoundException("La área de intervención no fue encontrada" + id));
         return existingInterventionArea;
     }
 
@@ -88,4 +85,30 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
                 .toList();
     }
 
+    // Método para habilitar un área de intervención
+    @Override
+    public void enableInterventionArea(Long id) {
+        InterventionArea area = interventionAreaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Área de intervención no encontrada con id: " + id));
+
+        if (area.isEnabled()) {
+            throw new IllegalArgumentException("El área de intervención ya está habilitada.");
+        }
+
+        area.setEnabled(true);
+        interventionAreaRepository.save(area);
+    }
+
+    // Método para deshabilitar un área de intervención (si se requiere directamente)
+    public void disableInterventionArea(Long id) {
+        InterventionArea area = interventionAreaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Área de intervención no encontrada con id: " + id));
+
+        if (!area.isEnabled()) {
+            throw new IllegalArgumentException("El área de intervención ya está deshabilitada.");
+        }
+
+        area.setEnabled(false);
+        interventionAreaRepository.save(area);
+    }
 }
