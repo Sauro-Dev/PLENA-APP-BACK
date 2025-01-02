@@ -28,8 +28,8 @@ public class RoomController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Room>> listActiveRooms() {
-        List<Room> rooms = roomService.listActiveRooms(); // Llama al método para obtener solo las salas activas
+    public ResponseEntity<List<Room>> listRooms() {
+        List<Room> rooms = roomService.listRooms(); // Llama al método para obtener solo las salas activas
         return ResponseEntity.ok(rooms);
     }
 
@@ -61,25 +61,16 @@ public class RoomController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/delete/{roomId}")
-    public ResponseEntity<String> deleteRoom(@PathVariable Long roomId) {
-        roomService.deleteRoom(roomId);
-        String message = "La sala con ID " + roomId + " fue eliminada exitosamente.";
-        return ResponseEntity.ok(message);
-    }
-
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/enable/{roomId}")
     public ResponseEntity<String> enableRoom(@PathVariable Long roomId) {
         roomService.enableRoom(roomId);
         return ResponseEntity.ok("Sala con ID " + roomId + " reactivada correctamente.");
     }
 
-    // Endpoint para deshabilitar sala
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/disable/{roomId}")
     public ResponseEntity<String> disableRoom(@PathVariable Long roomId) {
-        Room room = roomService.getRoomById(roomId); // Verifica si la sala existe
+        Room room = roomService.getRoomById(roomId);
         if (room == null) {
             throw new IllegalArgumentException("Sala no encontrada con ID: " + roomId);
         }

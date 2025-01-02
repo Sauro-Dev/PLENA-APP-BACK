@@ -42,12 +42,12 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<Room> listRooms() {
-        return roomRepository.findAll();
+        return roomRepository.findByEnabledTrue();
     }
 
     @Override
     public List<Room> listRoomsByIsTherapeutic(boolean isTherapeutic) {
-        return roomRepository.findByIsTherapeutic(isTherapeutic);
+        return roomRepository.findByIsTherapeuticAndEnabledTrue(isTherapeutic);
     }
 
     @Override
@@ -74,25 +74,28 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public String disableRoom(Long roomId) {
-        return "";
-    }
+    public void disableRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada con ID: " + roomId));
 
-    @Override
-    public String enableRoom(Long roomId) {
-        return "";
-    }
-
-    @Override
-    public String deleteRoom(Long roomId) {
-        Room existingRoom = roomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
-        List<Material> materials = materialRepository.findByRoom(existingRoom);
-        for (Material material : materials) {
-            material.setRoom(null);
-            materialRepository.save(material);
+        if (!room.isEnabled()) {
+            throw new IllegalStateException("La sala con ID " + roomId + " ya está deshabilitada.");
         }
-        roomRepository.deleteById(roomId);
-        return "La sala con ID " + roomId + " y nombre '" + existingRoom.getName() + "' fue eliminada exitosamente.";
+
+        room.setEnabled(false);
+        roomRepository.save(room);
+    }
+
+    @Override
+    public void enableRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada con ID: " + roomId));
+
+        if (room.isEnabled()) {
+            throw new IllegalStateException("La sala con ID " + roomId + " ya está habilitada.");
+        }
+
+        room.setEnabled(true);
+        roomRepository.save(room);
     }
 }
