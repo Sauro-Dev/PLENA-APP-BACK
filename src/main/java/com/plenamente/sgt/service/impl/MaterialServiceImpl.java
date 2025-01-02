@@ -31,10 +31,8 @@ public class MaterialServiceImpl implements MaterialService {
     public Material registerMaterial(RegisterMaterial dto) {
         Material material = new Material();
 
-        // Generar el ID para el nuevo material
-        String generatedId = generateNextMaterialId();  // Generar el ID incremental
-        material.setIdMaterial(generatedId);  // Asignar el ID al material
-
+        String generatedId = generateNextMaterialId();
+        material.setIdMaterial(generatedId);
         material.setNombre(dto.nombre());
         material.setDescripcion(dto.descripcion());
         material.setStock(dto.stock());
@@ -42,7 +40,7 @@ public class MaterialServiceImpl implements MaterialService {
         material.setEsSoporte(dto.esSoporte());
         material.setEstado(dto.estado());
 
-        return materialRepository.save(material);  // Guardar el material en la base de datos
+        return materialRepository.save(material);
     }
 
     @Cacheable("materials")
@@ -120,8 +118,12 @@ public class MaterialServiceImpl implements MaterialService {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new EntityNotFoundException("Material no encontrado con id: " + materialId));
 
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
+        Room room = roomRepository.findByIdRoomAndEnabledTrue(roomId)
+                .orElseThrow(() -> new IllegalStateException("Sala no encontrada o está deshabilitada (ID: " + roomId + ")."));
+
+        if (!room.isEnabled()) {
+            throw new IllegalStateException("No se puede asignar materiales a una sala deshabilitada (ID: " + roomId + ").");
+        }
 
         material.setRoom(room);
         return materialRepository.save(material);
@@ -132,7 +134,7 @@ public class MaterialServiceImpl implements MaterialService {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new EntityNotFoundException("Material no encontrado con id: " + materialId));
 
-        material.setRoom(null);  // Desasignamos el material de cualquier sala
+        material.setRoom(null);
         return materialRepository.save(material);
     }
 

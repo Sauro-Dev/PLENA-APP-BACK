@@ -27,4 +27,9 @@ public class InterventionArea {
     @JsonManagedReference
     @OneToMany(mappedBy = "interventionArea", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<MaterialArea> materialAreas;
+
+    // Nuevo campo para borrado lógico
+    @Column(nullable = false)
+    private boolean enabled = true;  // Por defecto, el área está habilitada
 }
+

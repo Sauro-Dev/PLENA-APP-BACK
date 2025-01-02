@@ -12,5 +12,6 @@ public interface RoomService {
     List<Material> getMaterialsByRoom(Long roomId);
     Room getRoomById(Long roomId);
     Room updateRoom(Long roomId, Room roomUpdated);
-    String deleteRoom(Long roomId);
+    void disableRoom(Long roomId);
+    void enableRoom(Long roomId);
 }

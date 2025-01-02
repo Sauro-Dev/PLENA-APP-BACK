@@ -42,12 +42,12 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<Room> listRooms() {
-        return roomRepository.findAll();
+        return roomRepository.findByEnabledTrue();
     }
 
     @Override
     public List<Room> listRoomsByIsTherapeutic(boolean isTherapeutic) {
-        return roomRepository.findByIsTherapeutic(isTherapeutic);
+        return roomRepository.findByIsTherapeuticAndEnabledTrue(isTherapeutic);
     }
 
     @Override
@@ -60,7 +60,6 @@ public class RoomServiceImpl implements RoomService {
     public Room updateRoom(Long roomId, @RequestBody Room roomUpdated){
         Room existingRoom = roomRepository.findById(roomId)
                 .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
-        // Actualizar los valores con los datos proporcionados
         if (roomUpdated.getName() != null) {
             existingRoom.setName(roomUpdated.getName());
         }
@@ -71,20 +70,32 @@ public class RoomServiceImpl implements RoomService {
             existingRoom.setIsTherapeutic(roomUpdated.getIsTherapeutic());
         }
 
-        // Guardar los cambios en la base de datos
         return roomRepository.save(existingRoom);
     }
 
     @Override
-    public String deleteRoom(Long roomId) {
-        Room existingRoom = roomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("Room no encontrado con id: " + roomId));
-        List<Material> materials = materialRepository.findByRoom(existingRoom);
-        for (Material material : materials) {
-            material.setRoom(null);  // Desasignar material
-            materialRepository.save(material);  // Guardar el cambio
+    public void disableRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada con ID: " + roomId));
+
+        if (!room.isEnabled()) {
+            throw new IllegalStateException("La sala con ID " + roomId + " ya está deshabilitada.");
         }
-        roomRepository.deleteById(roomId);
-        return "La sala con ID " + roomId + " y nombre '" + existingRoom.getName() + "' fue eliminada exitosamente.";
+
+        room.setEnabled(false);
+        roomRepository.save(room);
+    }
+
+    @Override
+    public void enableRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada con ID: " + roomId));
+
+        if (room.isEnabled()) {
+            throw new IllegalStateException("La sala con ID " + roomId + " ya está habilitada.");
+        }
+
+        room.setEnabled(true);
+        roomRepository.save(room);
     }
 }
