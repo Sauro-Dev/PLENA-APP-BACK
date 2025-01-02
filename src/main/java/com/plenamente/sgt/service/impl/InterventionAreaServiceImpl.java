@@ -32,7 +32,7 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
         InterventionArea interventionArea = new InterventionArea();
         interventionArea.setName(name);
         interventionArea.setDescription(description);
-        interventionArea.setEnabled(true); // Al crear, habilitado por defecto
+        interventionArea.setEnabled(true);
         return interventionAreaRepository.save(interventionArea);
     }
 
@@ -49,7 +49,7 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
         InterventionArea existingArea = interventionAreaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Intervention Area no encontrado con id: " + id));
 
-        existingArea.setEnabled(false);  // Borrado lógico
+        existingArea.setEnabled(false);
         return interventionAreaRepository.save(existingArea);
     }
 
