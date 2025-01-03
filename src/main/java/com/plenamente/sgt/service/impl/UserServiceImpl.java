@@ -1,10 +1,7 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.UserDto.*;
-import com.plenamente.sgt.domain.entity.AdminTherapist;
-import com.plenamente.sgt.domain.entity.Secretary;
-import com.plenamente.sgt.domain.entity.Therapist;
-import com.plenamente.sgt.domain.entity.User;
+import com.plenamente.sgt.domain.entity.*;
 import com.plenamente.sgt.infra.repository.UserRepository;
 import com.plenamente.sgt.infra.security.JwtService;
 import com.plenamente.sgt.infra.security.LoginRequest;
@@ -135,6 +132,27 @@ public class UserServiceImpl implements UserService {
                         user.getPhoneBackup(),
                         user.getAddress(),
                         user.getBirthdate()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ListUser> getAllTherapists() {
+        return userRepository.findByRole(Rol.THERAPIST)
+                .stream()
+                .map(therapist -> new ListUser(
+                        therapist.getIdUser(),
+                        therapist.getUsername(),
+                        therapist.getName(),
+                        therapist.getEmail(),
+                        therapist.getRol(),
+                        therapist.getPaternalSurname(),
+                        therapist.getMaternalSurname(),
+                        therapist.getDni(),
+                        therapist.getPhone(),
+                        therapist.getPhoneBackup(),
+                        therapist.getAddress(),
+                        therapist.getBirthdate()
                 ))
                 .collect(Collectors.toList());
     }

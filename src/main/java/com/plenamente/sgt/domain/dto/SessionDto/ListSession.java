@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public record ListSession(
         Long idSession,
+        Long therapistId,
         LocalDate sessionDate,
         String startTime,
         String endTime,

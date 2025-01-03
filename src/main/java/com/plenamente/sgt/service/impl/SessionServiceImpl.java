@@ -136,6 +136,7 @@ public class SessionServiceImpl implements SessionService {
                 .stream()
                 .map(session -> new ListSession(
                         session.getIdSession(),
+                        session.getTherapist().getIdUser(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),
@@ -161,6 +162,7 @@ public class SessionServiceImpl implements SessionService {
         return sessions.stream()
                 .map(session -> new ListSession(
                         session.getIdSession(),
+                        session.getTherapist().getIdUser(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),
@@ -179,6 +181,7 @@ public class SessionServiceImpl implements SessionService {
         return sessions.stream()
                 .map(session -> new ListSession(
                         session.getIdSession(),
+                        session.getTherapist().getIdUser(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),

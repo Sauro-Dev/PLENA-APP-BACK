@@ -13,6 +13,8 @@ public interface UserService {
 
     TokenResponse addUser(RegisterUser usuario);
 
+    List<ListUser> getAllTherapists();
+
     ListUser getUserById(Long id);
 
     List<ListUser> getAllUsers();

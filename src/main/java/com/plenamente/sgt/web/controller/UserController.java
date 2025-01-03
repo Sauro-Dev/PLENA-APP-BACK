@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -64,6 +63,12 @@ public class UserController {
     public ResponseEntity<List<ListUser>> getAllUsers() {
         authorizationService.authorizeRegisterUser();
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/all-therapists")
+    public ResponseEntity<List<ListUser>> getAllTherapists() {
+        List<ListUser> therapists = userService.getAllTherapists();
+        return ResponseEntity.ok(therapists);
     }
 
     @GetMapping("/me")
