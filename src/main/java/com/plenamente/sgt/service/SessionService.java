@@ -5,6 +5,7 @@ import com.plenamente.sgt.domain.dto.SessionDto.MarkPresenceSession;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
+import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
 
 import java.time.LocalDate;
@@ -25,4 +26,6 @@ public interface SessionService {
     List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime);
 
     List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
+
+    List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime);
 }

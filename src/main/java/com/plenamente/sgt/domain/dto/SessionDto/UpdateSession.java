@@ -1,5 +1,6 @@
 package com.plenamente.sgt.domain.dto.SessionDto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -11,6 +12,6 @@ public record UpdateSession(
         @NotNull LocalTime startTime,
         @NotNull Long therapistId,
         @NotNull Long roomId,
-        String reason
+        @NotBlank String reason
 ) {
 }

@@ -256,6 +256,21 @@ public class SessionServiceImpl implements SessionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime) {
+        List<Room> allRooms = roomRepository.findAll();
+
+        List<Room> occupiedRooms = sessionRepository
+                .findBySessionDateAndStartTimeLessThanAndEndTimeGreaterThan(date, endTime, startTime)
+                .stream()
+                .map(Session::getRoom)
+                .toList();
+
+        return allRooms.stream()
+                .filter(room -> !occupiedRooms.contains(room))
+                .collect(Collectors.toList());
+    }
+
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
         return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
                 therapistId, date, startTime, endTime, 0L);

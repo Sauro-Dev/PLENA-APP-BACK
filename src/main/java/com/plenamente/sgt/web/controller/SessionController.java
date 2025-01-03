@@ -5,6 +5,7 @@ import com.plenamente.sgt.domain.dto.SessionDto.MarkPresenceSession;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
+import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
 import com.plenamente.sgt.service.SessionService;
 import lombok.RequiredArgsConstructor;
@@ -84,5 +85,16 @@ public class SessionController {
 
         List<ListTherapist> availableTherapists = sessionService.getAvailableTherapist(sessionDate, startTime, endTime);
         return ResponseEntity.ok(availableTherapists);
+    }
+
+    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
+    @GetMapping("/available-rooms")
+    public ResponseEntity<List<Room>> getAvailableRooms(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sessionDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime) {
+
+        List<Room> availableRooms = sessionService.getAvailableRooms(sessionDate, startTime, endTime);
+        return ResponseEntity.ok(availableRooms);
     }
 }
