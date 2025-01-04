@@ -20,4 +20,6 @@ public interface InterventionAreaRepository extends JpaRepository<InterventionAr
 
     // Filtrar áreas de intervención activas (enabled = true)
     List<InterventionArea> findByEnabledTrue();
+
+    List<InterventionArea> findByEnabledFalse();
 }

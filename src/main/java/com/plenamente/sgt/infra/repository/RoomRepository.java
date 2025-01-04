@@ -10,4 +10,5 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findByEnabledTrue();
     List<Room> findByIsTherapeuticAndEnabledTrue(boolean isTherapeutic);
     Optional<Room> findByIdRoomAndEnabledTrue(Long idRoom);
+    List<Room> findByEnabledFalse();
 }

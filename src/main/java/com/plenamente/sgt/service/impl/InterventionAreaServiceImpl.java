@@ -1,6 +1,7 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.CreateAreaForIntervention;
+import com.plenamente.sgt.domain.dto.InterventionAreaDto.DisabledInterventionArea;
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.ListInterventionArea;
 import com.plenamente.sgt.domain.entity.InterventionArea;
 import com.plenamente.sgt.domain.entity.Material;
@@ -11,7 +12,6 @@ import com.plenamente.sgt.mapper.InterventionAreaMapper;
 import com.plenamente.sgt.service.InterventionAreaService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -110,5 +110,17 @@ public class InterventionAreaServiceImpl implements InterventionAreaService {
 
         area.setEnabled(false);
         interventionAreaRepository.save(area);
+    }
+
+    @Override
+    public List<DisabledInterventionArea> getDisabledInterventionAreas() {
+        List<InterventionArea> disabledAreas = interventionAreaRepository.findByEnabledFalse();
+        return disabledAreas.stream()
+                .map(area -> new DisabledInterventionArea(
+                        area.getIdInterventionArea(),
+                        area.getName(),
+                        area.getDescription()
+                ))
+                .collect(Collectors.toList());
     }
 }

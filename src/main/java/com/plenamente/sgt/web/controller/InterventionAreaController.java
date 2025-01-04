@@ -1,6 +1,7 @@
 package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.CreateAreaForIntervention;
+import com.plenamente.sgt.domain.dto.InterventionAreaDto.DisabledInterventionArea;
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.ListInterventionArea;
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.reportInterventionArea;
 import com.plenamente.sgt.domain.entity.InterventionArea;
@@ -82,5 +83,12 @@ public class InterventionAreaController {
     public ResponseEntity<String> disableInterventionArea(@PathVariable Long id) {
         interventionAreaService.disableInterventionArea(id);
         return ResponseEntity.ok("Área de intervención con ID " + id + " deshabilitada correctamente.");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/disabled")
+    public ResponseEntity<List<DisabledInterventionArea>> getDisabledInterventionAreas() {
+        List<DisabledInterventionArea> disabledAreas = interventionAreaService.getDisabledInterventionAreas();
+        return ResponseEntity.ok(disabledAreas);
     }
 }

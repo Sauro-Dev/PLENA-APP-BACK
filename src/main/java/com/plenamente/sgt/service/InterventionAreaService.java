@@ -1,6 +1,7 @@
 package com.plenamente.sgt.service;
 
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.CreateAreaForIntervention;
+import com.plenamente.sgt.domain.dto.InterventionAreaDto.DisabledInterventionArea;
 import com.plenamente.sgt.domain.dto.InterventionAreaDto.ListInterventionArea;
 import com.plenamente.sgt.domain.entity.InterventionArea;
 
@@ -22,4 +23,6 @@ public interface InterventionAreaService {
     void enableInterventionArea(Long id);
 
     void disableInterventionArea(Long id);
+
+    List<DisabledInterventionArea> getDisabledInterventionAreas();
 }

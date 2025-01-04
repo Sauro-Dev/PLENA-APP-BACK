@@ -1,5 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
+import com.plenamente.sgt.domain.dto.RoomDto.DisabledRoom;
 import com.plenamente.sgt.domain.entity.Material;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.service.RoomService;
@@ -76,5 +77,12 @@ public class RoomController {
         }
         roomService.disableRoom(roomId);
         return ResponseEntity.ok("Sala con ID " + roomId + " deshabilitada correctamente.");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/disabled")
+    public ResponseEntity<List<DisabledRoom>> getDisabledRooms() {
+        List<DisabledRoom> disabledRooms = roomService.getDisabledRooms();
+        return ResponseEntity.ok(disabledRooms);
     }
 }

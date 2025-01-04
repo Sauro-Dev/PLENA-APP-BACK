@@ -1,5 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
+import com.plenamente.sgt.domain.dto.RoomDto.DisabledRoom;
 import com.plenamente.sgt.domain.entity.Material;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.infra.repository.MaterialRepository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -97,5 +99,18 @@ public class RoomServiceImpl implements RoomService {
 
         room.setEnabled(true);
         roomRepository.save(room);
+    }
+
+    @Override
+    public List<DisabledRoom> getDisabledRooms() {
+        List<Room> disabledRooms = roomRepository.findByEnabledFalse();
+        return disabledRooms.stream()
+                .map(room -> new DisabledRoom(
+                        room.getIdRoom(),
+                        room.getName(),
+                        room.getAddress(),
+                        room.getIsTherapeutic()
+                ))
+                .collect(Collectors.toList());
     }
 }
