@@ -39,7 +39,7 @@ public class EvaluationDocumentController {
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<UpdateEvaluationDocument> updateEvaluationDocument(
-            @PathVariable Long id,UpdateEvaluationDocument evaluationDocumentUp) {
+            @PathVariable Long id, @RequestBody UpdateEvaluationDocument evaluationDocumentUp) {
         UpdateEvaluationDocument updatedEvaluationDocument = evaluationDocumentService.updateEvaluationDocument(id, evaluationDocumentUp);
         return ResponseEntity.ok(updatedEvaluationDocument);
     }
