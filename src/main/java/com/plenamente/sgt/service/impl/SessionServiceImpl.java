@@ -19,6 +19,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,45 @@ public class SessionServiceImpl implements SessionService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
 
+    @Override
+    public List<ListSession> getFilteredSessions(LocalDate date, Long therapistId, Long roomId) {
+        List<Session> sessions;
+
+        // Si no hay fecha, obtener las sesiones desde hoy en adelante
+        if (date != null) {
+            sessions = sessionRepository.findBySessionDate(date);
+        } else {
+            sessions = sessionRepository.findBySessionDateGreaterThanEqual(LocalDate.now());
+        }
+
+        // Aplicar filtros adicionales
+        Stream<Session> sessionStream = sessions.stream();
+
+        if (therapistId != null && !therapistId.toString().isEmpty()) {
+            sessionStream = sessionStream.filter(s -> s.getTherapist().getIdUser().equals(therapistId));
+        }
+
+        if (roomId != null) {
+            sessionStream = sessionStream.filter(s -> s.getRoom().getIdRoom().equals(roomId));
+        }
+
+        return sessionStream
+                .map(session -> new ListSession(
+                        session.getIdSession(),
+                        session.getTherapist().getIdUser(),
+                        session.getRoom().getIdRoom(),
+                        session.getSessionDate(),
+                        formatTime12Hour(session.getStartTime()),
+                        formatTime12Hour(session.getEndTime()),
+                        session.getPatient().getName(),
+                        session.getTherapist().getName(),
+                        session.getRoom().getName(),
+                        session.isRescheduled(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent()
+                ))
+                .collect(Collectors.toList());
+    }
 
     @Override
     public Session createSession(RegisterSession dto) {

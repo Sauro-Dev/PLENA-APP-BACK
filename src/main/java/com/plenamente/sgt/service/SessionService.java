@@ -30,4 +30,6 @@ public interface SessionService {
     List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime);
 
     List<ListSession> getSessionsByRoom(Long roomId);
+
+    List<ListSession> getFilteredSessions(LocalDate date, Long therapistId, Long roomId);
 }

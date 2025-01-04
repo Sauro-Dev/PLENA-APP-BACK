@@ -7,6 +7,7 @@ import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
+import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -67,9 +69,19 @@ public class SessionController {
     }
 
     @GetMapping("/sessions-byRoom/{roomId}")
-    public ResponseEntity<List<ListSession>> getSessionsByRoom(@PathVariable("roomId") Long roomId) {
-        List<ListSession> sessions = sessionService.getSessionsByRoom(roomId);
-        return ResponseEntity.ok(sessions);
+    public ResponseEntity<List<ListSession>> getSessionsByRoom(
+            @PathVariable(required = false) Long roomId,
+            @RequestParam(required = false) LocalDate date) {
+        try {
+            if (roomId == null) {
+                // Si no hay roomId, obtener todas las sesiones del día actual o la fecha específica
+                return ResponseEntity.ok(sessionService.getSessionsByDate(date != null ? date : LocalDate.now()));
+            }
+            return ResponseEntity.ok(sessionService.getSessionsByRoom(roomId));
+        } catch (ResourceNotFoundException e) {
+            // En lugar de error, devolver lista vacía
+            return ResponseEntity.ok(new ArrayList<>());
+        }
     }
 
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
@@ -102,5 +114,17 @@ public class SessionController {
 
         List<Room> availableRooms = sessionService.getAvailableRooms(sessionDate, startTime, endTime);
         return ResponseEntity.ok(availableRooms);
+    }
+
+    @GetMapping("/filtered")
+    public ResponseEntity<List<ListSession>> getFilteredSessions(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate date,
+            @RequestParam(required = false) Long therapistId,
+            @RequestParam(required = false) Long roomId) {
+        try {
+            return ResponseEntity.ok(sessionService.getFilteredSessions(date, therapistId, roomId));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
     }
 }
