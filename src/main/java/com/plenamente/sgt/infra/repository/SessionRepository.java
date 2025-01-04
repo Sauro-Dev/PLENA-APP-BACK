@@ -28,4 +28,6 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     boolean existsByRoom_IdRoomAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThan(Long roomId, LocalDate date, LocalTime startTime, LocalTime endTime);
 
     List<Session> findBySessionDateAndStartTimeLessThanAndEndTimeGreaterThan(LocalDate date, LocalTime endTime, LocalTime startTime);
+
+    List<Session> findByRoom_IdRoom(Long roomId);
 }

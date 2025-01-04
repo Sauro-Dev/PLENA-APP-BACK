@@ -28,4 +28,6 @@ public interface SessionService {
     List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
 
     List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime);
+
+    List<ListSession> getSessionsByRoom(Long roomId);
 }

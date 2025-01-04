@@ -29,7 +29,7 @@ public class RoomController {
 
     @GetMapping("/all")
     public ResponseEntity<List<Room>> listRooms() {
-        List<Room> rooms = roomService.listRooms(); // Llama al método para obtener solo las salas activas
+        List<Room> rooms = roomService.listRooms();
         return ResponseEntity.ok(rooms);
     }
 

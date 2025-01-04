@@ -66,6 +66,12 @@ public class SessionController {
         return ResponseEntity.ok(sessions);
     }
 
+    @GetMapping("/sessions-byRoom/{roomId}")
+    public ResponseEntity<List<ListSession>> getSessionsByRoom(@PathVariable("roomId") Long roomId) {
+        List<ListSession> sessions = sessionService.getSessionsByRoom(roomId);
+        return ResponseEntity.ok(sessions);
+    }
+
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/presence/{id}")
     public ResponseEntity<Session> markPresence(@PathVariable("id") Long sessionId,

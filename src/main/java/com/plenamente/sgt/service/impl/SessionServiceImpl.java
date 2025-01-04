@@ -137,6 +137,7 @@ public class SessionServiceImpl implements SessionService {
                 .map(session -> new ListSession(
                         session.getIdSession(),
                         session.getTherapist().getIdUser(),
+                        session.getRoom().getIdRoom(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),
@@ -163,6 +164,7 @@ public class SessionServiceImpl implements SessionService {
                 .map(session -> new ListSession(
                         session.getIdSession(),
                         session.getTherapist().getIdUser(),
+                        session.getRoom().getIdRoom(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),
@@ -182,6 +184,36 @@ public class SessionServiceImpl implements SessionService {
                 .map(session -> new ListSession(
                         session.getIdSession(),
                         session.getTherapist().getIdUser(),
+                        session.getRoom().getIdRoom(),
+                        session.getSessionDate(),
+                        formatTime12Hour(session.getStartTime()),
+                        formatTime12Hour(session.getEndTime()),
+                        session.getPatient().getName(),
+                        session.getTherapist().getName(),
+                        session.getRoom().getName(),
+                        session.isRescheduled(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ListSession> getSessionsByRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada."));
+
+        List<Session> sessions = sessionRepository.findByRoom_IdRoom(roomId);
+
+        if (sessions.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontraron sesiones para la sala " + room.getName());
+        }
+
+        return sessions.stream()
+                .map(session -> new ListSession(
+                        session.getIdSession(),
+                        session.getTherapist().getIdUser(),
+                        session.getRoom().getIdRoom(),
                         session.getSessionDate(),
                         formatTime12Hour(session.getStartTime()),
                         formatTime12Hour(session.getEndTime()),
