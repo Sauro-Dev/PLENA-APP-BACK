@@ -1,9 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
-import com.plenamente.sgt.domain.dto.InterventionAreaDto.CreateAreaForIntervention;
-import com.plenamente.sgt.domain.dto.InterventionAreaDto.DisabledInterventionArea;
-import com.plenamente.sgt.domain.dto.InterventionAreaDto.ListInterventionArea;
-import com.plenamente.sgt.domain.dto.InterventionAreaDto.reportInterventionArea;
+import com.plenamente.sgt.domain.dto.InterventionAreaDto.*;
 import com.plenamente.sgt.domain.entity.InterventionArea;
 import com.plenamente.sgt.service.InterventionAreaService;
 import jakarta.validation.Valid;
@@ -47,9 +44,12 @@ public class InterventionAreaController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
-    public ResponseEntity<InterventionArea> updateInterventionArea(@PathVariable Long id, @RequestBody CreateAreaForIntervention createInterventionArea) {
-        interventionAreaService.updateInterventionArea(id, createInterventionArea);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<InterventionArea> updateInterventionArea(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateInterventionArea updateInterventionArea
+    ) {
+        InterventionArea updatedArea = interventionAreaService.updateInterventionArea(id, updateInterventionArea);
+        return ResponseEntity.ok(updatedArea);
     }
 
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
@@ -57,10 +57,11 @@ public class InterventionAreaController {
     public ResponseEntity<reportInterventionArea> getInterventionArea(@PathVariable Long id) {
         InterventionArea interventionArea = interventionAreaService.getInterventionArea(id);
 
-        // Crear el DTO utilizando el constructor vacío y setters
-        reportInterventionArea dto = new reportInterventionArea();
-        dto.setName(interventionArea.getName());
-        dto.setDescription(interventionArea.getDescription());
+        reportInterventionArea dto = new reportInterventionArea(
+                interventionArea.getName(),
+                interventionArea.getDescription(),
+                interventionArea.isEnabled()
+        );
 
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }

@@ -24,7 +24,8 @@ public class InterventionAreaMapper {
             return new ListInterventionArea(
                     source.getIdInterventionArea(),
                     source.getName(),
-                    source.getDescription()
+                    source.getDescription(),
+                    source.isEnabled()
             );
         });
         return modelMapper.map(interventionArea, ListInterventionArea.class);

@@ -1,12 +1,10 @@
 package com.plenamente.sgt.domain.dto.InterventionAreaDto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
-public record ListInterventionArea(
-        @NotNull Long id,
+public record UpdateInterventionArea(
         @NotBlank String name,
-        @NotBlank String description,
+        String description,
         boolean enabled
-){
+) {
 }
