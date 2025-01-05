@@ -16,5 +16,6 @@ public record ListUser(
         String phone,
         String phoneBackup,
         String address,
-        LocalDate birthdate
+        LocalDate birthdate,
+        boolean enabled
 ) {}
