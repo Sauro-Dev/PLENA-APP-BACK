@@ -11,6 +11,7 @@ import com.plenamente.sgt.mapper.MaterialMapper;
 import com.plenamente.sgt.service.MaterialService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -23,6 +24,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MaterialServiceImpl implements MaterialService {
 
     private final MaterialRepository materialRepository;
@@ -59,6 +61,7 @@ public class MaterialServiceImpl implements MaterialService {
 
     @Override
     public List<RegisterMaterial> getAllMaterials() {
+        log.info("Intentando obtener materiales de la caché");
         // Intentar obtener de la caché
         @SuppressWarnings("unchecked")
         List<RegisterMaterial> cachedMaterials = (List<RegisterMaterial>) redisTemplate
@@ -66,26 +69,31 @@ public class MaterialServiceImpl implements MaterialService {
                 .get(MATERIALS_CACHE_KEY);
 
         if (cachedMaterials == null) {
+            log.info("No se encontraron materiales en caché, obteniendo de la base de datos");
             // Si no está en caché, obtener de la base de datos
             List<Material> materials = materialRepository.findAll();
             List<RegisterMaterial> materialDTOs = materials.stream()
                     .map(materialMapper::toDTO)
                     .toList();
 
+            log.info("Guardando {} materiales en caché", materialDTOs.size());
             // Guardar en caché
             redisTemplate.opsForValue().set(MATERIALS_CACHE_KEY, materialDTOs);
             return materialDTOs;
         }
 
+        log.info("Retornando {} materiales desde caché", cachedMaterials.size());
         return cachedMaterials;
     }
 
     private void updateMaterialsCache() {
+        log.info("Actualizando caché de materiales");
         List<Material> materials = materialRepository.findAll();
         List<RegisterMaterial> materialDTOs = materials.stream()
                 .map(materialMapper::toDTO)
                 .toList();
         redisTemplate.opsForValue().set(MATERIALS_CACHE_KEY, materialDTOs);
+        log.info("Caché actualizada con {} materiales", materialDTOs.size());
     }
 
     public void clearMaterialsCache() {
