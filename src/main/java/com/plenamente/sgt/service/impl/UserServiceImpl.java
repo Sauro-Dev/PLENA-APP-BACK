@@ -131,7 +131,8 @@ public class UserServiceImpl implements UserService {
                         user.getPhone(),
                         user.getPhoneBackup(),
                         user.getAddress(),
-                        user.getBirthdate()
+                        user.getBirthdate(),
+                        user.isEnabled()
                 ))
                 .collect(Collectors.toList());
     }
@@ -152,7 +153,8 @@ public class UserServiceImpl implements UserService {
                         therapist.getPhone(),
                         therapist.getPhoneBackup(),
                         therapist.getAddress(),
-                        therapist.getBirthdate()
+                        therapist.getBirthdate(),
+                        therapist.isEnabled()
                 ))
                 .collect(Collectors.toList());
     }
@@ -174,7 +176,8 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getAddress(),
-                user.getBirthdate()
+                user.getBirthdate(),
+                user.isEnabled()
         );
     }
 

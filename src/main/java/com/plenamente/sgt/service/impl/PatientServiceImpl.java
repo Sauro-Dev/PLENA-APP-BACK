@@ -96,12 +96,10 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public Patient updatePatient(Long id, UpdatePatient updatePatient) {
-        // Obtener paciente existente
         Patient existingPatient = patientRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Paciente no encontrado.")
         );
 
-        // Actualizar información del paciente
         existingPatient.setName(updatePatient.name());
         existingPatient.setPaternalSurname(updatePatient.paternalSurname());
         existingPatient.setMaternalSurname(updatePatient.maternalSurname());
@@ -150,6 +148,7 @@ public class PatientServiceImpl implements PatientService {
                 patient.getPaternalSurname(),
                 patient.getMaternalSurname(),
                 patient.getDni(),
+                patient.getBirthdate(),
                 patient.getAge(),
                 patient.getIdPlan().getIdPlan(),
                 patient.getTutors().stream()
