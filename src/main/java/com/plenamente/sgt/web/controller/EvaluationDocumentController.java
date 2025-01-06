@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/v1/evaluationDocument")
 @RequiredArgsConstructor
@@ -40,9 +42,11 @@ public class EvaluationDocumentController {
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<UpdateEvaluationDocument> updateEvaluationDocument(
-            @PathVariable Long id, @RequestBody UpdateEvaluationDocument evaluationDocumentUp) {
-        UpdateEvaluationDocument updatedEvaluationDocument = evaluationDocumentService.updateEvaluationDocument(id, evaluationDocumentUp);
-        return ResponseEntity.ok(updatedEvaluationDocument);
+            @PathVariable Long id,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestBody UpdateEvaluationDocument evaluationDocumentUp) {
+        UpdateEvaluationDocument updatedDocument = evaluationDocumentService.updateEvaluationDocument(id, evaluationDocumentUp, file);
+        return ResponseEntity.ok(updatedDocument);
     }
 
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
@@ -50,5 +54,13 @@ public class EvaluationDocumentController {
     public ResponseEntity<EvaluationDocumentDetailsDto> selectEvaluationDocument(@PathVariable Long id) {
         EvaluationDocumentDetailsDto document = evaluationDocumentService.findEvaluationDocumentById(id);
         return new ResponseEntity<>(document, HttpStatus.OK);
+    }
+
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
+    @GetMapping("/list")
+    public ResponseEntity<List<EvaluationDocumentDetailsDto>> getDocumentsByMedicalHistory(
+            @RequestParam Long medicalHistoryId) {
+        List<EvaluationDocumentDetailsDto> documents = evaluationDocumentService.findDocumentsByMedicalHistoryId(medicalHistoryId);
+        return ResponseEntity.ok(documents);
     }
 }
