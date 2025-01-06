@@ -2,6 +2,7 @@ package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.MedicalHistoryDto.RegisterMedicalHistory;
 import com.plenamente.sgt.domain.dto.ReportDto.RegisterReport;
+import com.plenamente.sgt.domain.dto.ReportDto.ReportDetailsDto;
 import com.plenamente.sgt.domain.dto.ReportDto.UpdateReport;
 import com.plenamente.sgt.domain.entity.MedicalHistory;
 import com.plenamente.sgt.domain.entity.Report;
@@ -32,5 +33,11 @@ public class ReportController {
     public ResponseEntity<Report> updateReport(@PathVariable Long id, @RequestBody UpdateReport report) {
         Report updtReport = reportService.updateReport(id,report);
         return new ResponseEntity<>(updtReport, HttpStatus.OK);
+    }
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
+    @GetMapping("/select/{id}")
+    public ResponseEntity<ReportDetailsDto> selectReport(@PathVariable Long id) {
+        ReportDetailsDto report = reportService.findReportById(id);
+        return new ResponseEntity<>(report, HttpStatus.OK);
     }
 }
