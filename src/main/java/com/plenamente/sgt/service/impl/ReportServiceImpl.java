@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @NoArgsConstructor
 public class ReportServiceImpl implements ReportService {
@@ -51,5 +53,19 @@ public class ReportServiceImpl implements ReportService {
                 report.getName(),
                 report.getDescription()
         );
+    }
+
+    @Override
+    public List<ReportDetailsDto> findReportsByMedicalHistoryId(Long idMedicalHistory) {
+        MedicalHistory medicalHistory = medicalHistoryRepository.findById(idMedicalHistory)
+                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + idMedicalHistory));
+
+        return reportRepository.findByMedicalHistory_IdMedicalHistory(idMedicalHistory)
+                .stream().map(report -> new ReportDetailsDto(
+                        report.getIdReport(),
+                        report.getMedicalHistory().getIdMedicalHistory(),
+                        report.getName(),
+                        report.getDescription()
+                )).toList();
     }
 }
