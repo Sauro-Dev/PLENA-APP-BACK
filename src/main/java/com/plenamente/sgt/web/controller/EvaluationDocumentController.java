@@ -57,10 +57,10 @@ public class EvaluationDocumentController {
     }
 
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
-    @GetMapping("/list")
+    @GetMapping("/list/{id}")
     public ResponseEntity<List<EvaluationDocumentDetailsDto>> getDocumentsByMedicalHistory(
-            @RequestParam Long medicalHistoryId) {
-        List<EvaluationDocumentDetailsDto> documents = evaluationDocumentService.findDocumentsByMedicalHistoryId(medicalHistoryId);
+            @PathVariable Long id) {
+        List<EvaluationDocumentDetailsDto> documents = evaluationDocumentService.findDocumentsByMedicalHistoryId(id);
         return ResponseEntity.ok(documents);
     }
 }
