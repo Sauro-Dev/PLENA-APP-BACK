@@ -64,7 +64,8 @@ public class SessionServiceImpl implements SessionService {
                         session.getRoom().getName(),
                         session.isRescheduled(),
                         session.isTherapistPresent(),
-                        session.isPatientPresent()
+                        session.isPatientPresent(),
+                        session.getReason()
                 ))
                 .collect(Collectors.toList());
     }
@@ -186,7 +187,8 @@ public class SessionServiceImpl implements SessionService {
                         session.getRoom().getName(),
                         session.isRescheduled(),
                         session.isTherapistPresent(),
-                        session.isPatientPresent()
+                        session.isPatientPresent(),
+                        session.getReason()
                 ))
                 .collect(Collectors.toList());
     }
@@ -213,7 +215,8 @@ public class SessionServiceImpl implements SessionService {
                         session.getRoom().getName(),
                         session.isRescheduled(),
                         session.isTherapistPresent(),
-                        session.isPatientPresent()
+                        session.isPatientPresent(),
+                        session.getReason()
                 ))
                 .collect(Collectors.toList());
     }
@@ -233,7 +236,8 @@ public class SessionServiceImpl implements SessionService {
                         session.getRoom().getName(),
                         session.isRescheduled(),
                         session.isTherapistPresent(),
-                        session.isPatientPresent()
+                        session.isPatientPresent(),
+                        session.getReason()
                 ))
                 .collect(Collectors.toList());
     }
@@ -262,7 +266,8 @@ public class SessionServiceImpl implements SessionService {
                         session.getRoom().getName(),
                         session.isRescheduled(),
                         session.isTherapistPresent(),
-                        session.isPatientPresent()
+                        session.isPatientPresent(),
+                        session.getReason()
                 ))
                 .collect(Collectors.toList());
     }
