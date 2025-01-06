@@ -1,5 +1,6 @@
 package com.plenamente.sgt.service;
 
+import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.EvaluationDocumentDetailsDto;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.RegisterEvaluationDocument;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.UpdateEvaluationDocument;
 import com.plenamente.sgt.domain.entity.EvaluationDocument;
@@ -9,4 +10,5 @@ public interface EvaluationDocumentService {
     EvaluationDocument createEvaluationDocument(RegisterEvaluationDocument evaluationDocument, MultipartFile file);
     EvaluationDocument downloadEvaluationDocument(Long id);
     UpdateEvaluationDocument updateEvaluationDocument(Long id, UpdateEvaluationDocument evaluationDocument);
+    EvaluationDocumentDetailsDto findEvaluationDocumentById(Long id);
 }
