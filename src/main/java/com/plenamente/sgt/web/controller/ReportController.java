@@ -41,9 +41,9 @@ public class ReportController {
     }
 
     @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
-    @GetMapping("/list")
-    public ResponseEntity<List<ReportDetailsDto>> getReportsByMedicalHistory(@RequestParam Long medicalHistoryId) {
-        List<ReportDetailsDto> reports = reportService.findReportsByMedicalHistoryId(medicalHistoryId);
+    @GetMapping("/list/{id}")
+    public ResponseEntity<List<ReportDetailsDto>> getReportsByMedicalHistory(@PathVariable Long id) {
+        List<ReportDetailsDto> reports = reportService.findReportsByMedicalHistoryId(id);
         return ResponseEntity.ok(reports);
     }
 }
