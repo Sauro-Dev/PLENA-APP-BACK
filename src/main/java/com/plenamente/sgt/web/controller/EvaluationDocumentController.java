@@ -1,5 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
+import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.EvaluationDocumentDetailsDto;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.RegisterEvaluationDocument;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.UpdateEvaluationDocument;
 import com.plenamente.sgt.domain.entity.EvaluationDocument;
@@ -42,5 +43,12 @@ public class EvaluationDocumentController {
             @PathVariable Long id, @RequestBody UpdateEvaluationDocument evaluationDocumentUp) {
         UpdateEvaluationDocument updatedEvaluationDocument = evaluationDocumentService.updateEvaluationDocument(id, evaluationDocumentUp);
         return ResponseEntity.ok(updatedEvaluationDocument);
+    }
+
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
+    @GetMapping("/select/{id}")
+    public ResponseEntity<EvaluationDocumentDetailsDto> selectEvaluationDocument(@PathVariable Long id) {
+        EvaluationDocumentDetailsDto document = evaluationDocumentService.findEvaluationDocumentById(id);
+        return new ResponseEntity<>(document, HttpStatus.OK);
     }
 }

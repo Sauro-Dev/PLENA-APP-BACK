@@ -9,12 +9,18 @@ services:
       DB_URL: jdbc:mysql://sgt_db:3306/sgt?createDatabaseIfNotExist=true&serverTimezone=UTC
       DB_USER_NAME: root
       DB_PASSWORD: root
+      SPRING_DATA_REDIS_HOST: redis_sgt
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_TIMEOUT: 60000
     restart: always
     depends_on:
       sgt_db:
-          condition: service_healthy
+        condition: service_healthy
+      redis_sgt:
+        condition: service_started
+
   sgt_db:
-    image: mysql:8.0.36 
+    image: mysql:8.0.36
     ports:
       - "3307:3306"
     environment:
@@ -26,3 +32,20 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 10s
       retries: 10
+
+  redis_sgt:
+    image: redis:6.2
+    ports:
+      - "6380:6379"
+    command: redis-server --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis_data:

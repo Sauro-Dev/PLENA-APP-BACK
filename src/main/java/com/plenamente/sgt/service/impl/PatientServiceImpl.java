@@ -76,18 +76,14 @@ public class PatientServiceImpl implements PatientService {
     @Override
     public List<ListPatient> getAllPatients() {
         List<Patient> patients = patientRepository.findAll();
-
-        // Obtener cantidad de pacientes
         int patientCount = patients.size();
         System.out.println("Total de pacientes: " + patientCount);
 
-        // Mapear a ListPatient
         return patients.stream().map(this::mapToListPatient).collect(Collectors.toList());
     }
 
     @Override
     public ListPatient getPatientById(Long id) {
-        // Obtener paciente por ID
         Patient patient = patientRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Paciente no encontrado.")
         );
@@ -106,6 +102,7 @@ public class PatientServiceImpl implements PatientService {
         existingPatient.setDni(updatePatient.dni());
         existingPatient.setBirthdate(updatePatient.birthdate());
         existingPatient.setPresumptiveDiagnosis(updatePatient.presumptiveDiagnosis());
+        existingPatient.setStatus(updatePatient.status());
 
         int calculatedAge = Period.between(updatePatient.birthdate(), LocalDate.now()).getYears();
         existingPatient.setAge(calculatedAge);

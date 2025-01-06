@@ -68,6 +68,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public TokenResponse addUser(RegisterUser data) {
+        if (userRepository.existsByUsername(data.username())) {
+            throw new IllegalArgumentException("El username ya está en uso.");
+        }
+        if (userRepository.existsByEmail(data.email())) {
+            throw new IllegalArgumentException("El email ya está en uso.");
+        }
+        if (userRepository.existsByDni(data.dni())) {
+            throw new IllegalArgumentException("El DNI ya está en uso.");
+        }
         boolean isAlsoTherapist = data.paymentSession() != null;
 
         User user = UserFactory.createUser(data.role(), isAlsoTherapist);

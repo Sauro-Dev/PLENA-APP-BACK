@@ -1,5 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
+import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.EvaluationDocumentDetailsDto;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.RegisterEvaluationDocument;
 import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.UpdateEvaluationDocument;
 import com.plenamente.sgt.domain.entity.EvaluationDocument;
@@ -71,5 +72,18 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
         evaluationDocumentRepository.save(existingEvaluationDocument);
         // Guardar los cambios en el repositorio
         return evaluationDocumentUp;
+    }
+    @Override
+    public EvaluationDocumentDetailsDto findEvaluationDocumentById(Long id) {
+        EvaluationDocument document = evaluationDocumentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Evaluation document not found"));
+        return new EvaluationDocumentDetailsDto(
+                document.getIdDocument(),
+                document.getMedicalHistory().getIdMedicalHistory(),
+                document.getName(),
+                document.getDescription(),
+                document.getDocumentType(),
+                document.getArchive()
+        );
     }
 }

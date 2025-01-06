@@ -1,6 +1,7 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.ReportDto.RegisterReport;
+import com.plenamente.sgt.domain.dto.ReportDto.ReportDetailsDto;
 import com.plenamente.sgt.domain.dto.ReportDto.UpdateReport;
 import com.plenamente.sgt.domain.entity.MedicalHistory;
 import com.plenamente.sgt.domain.entity.Report;
@@ -38,5 +39,17 @@ public class ReportServiceImpl implements ReportService {
         reportId.setName(ReportUp.name());
         reportId.setDescription(ReportUp.description());
         return reportRepository.save(reportId);
+    }
+
+    @Override
+    public ReportDetailsDto findReportById(Long id) {
+        Report report = reportRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Report not found"));
+        return new ReportDetailsDto(
+                report.getIdReport(),
+                report.getMedicalHistory().getIdMedicalHistory(),
+                report.getName(),
+                report.getDescription()
+        );
     }
 }
