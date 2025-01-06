@@ -11,7 +11,10 @@ import com.plenamente.sgt.mapper.MaterialMapper;
 import com.plenamente.sgt.service.MaterialService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +29,13 @@ public class MaterialServiceImpl implements MaterialService {
     private final RoomRepository roomRepository;
     private final MaterialMapper materialMapper;
     private final MaterialAreaRepository areaRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final CacheManager cacheManager;
+    private static final String MATERIALS_CACHE_KEY = "materials";
 
     @Override
+    @Transactional
+    @CachePut("materials")
     public Material registerMaterial(RegisterMaterial dto) {
         Material material = new Material();
 
@@ -40,16 +48,49 @@ public class MaterialServiceImpl implements MaterialService {
         material.setEsSoporte(dto.esSoporte());
         material.setEstado(dto.estado());
 
-        return materialRepository.save(material);
+        Material savedMaterial = materialRepository.save(material);
+
+        // Limpiar la cache de materiales y actualizarla
+        cacheManager.getCache("materials").clear();
+        updateMaterialsCache();
+
+        return savedMaterial;
     }
 
-    @Cacheable("materials")
     @Override
     public List<RegisterMaterial> getAllMaterials() {
+        // Intentar obtener de la caché
+        @SuppressWarnings("unchecked")
+        List<RegisterMaterial> cachedMaterials = (List<RegisterMaterial>) redisTemplate
+                .opsForValue()
+                .get(MATERIALS_CACHE_KEY);
+
+        if (cachedMaterials == null) {
+            // Si no está en caché, obtener de la base de datos
+            List<Material> materials = materialRepository.findAll();
+            List<RegisterMaterial> materialDTOs = materials.stream()
+                    .map(materialMapper::toDTO)
+                    .toList();
+
+            // Guardar en caché
+            redisTemplate.opsForValue().set(MATERIALS_CACHE_KEY, materialDTOs);
+            return materialDTOs;
+        }
+
+        return cachedMaterials;
+    }
+
+    private void updateMaterialsCache() {
         List<Material> materials = materialRepository.findAll();
-        return materials.stream()
+        List<RegisterMaterial> materialDTOs = materials.stream()
                 .map(materialMapper::toDTO)
                 .toList();
+        redisTemplate.opsForValue().set(MATERIALS_CACHE_KEY, materialDTOs);
+    }
+
+    public void clearMaterialsCache() {
+        redisTemplate.delete(MATERIALS_CACHE_KEY);
+        cacheManager.getCache("materials").clear();
     }
 
     @Override

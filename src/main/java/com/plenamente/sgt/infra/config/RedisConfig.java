@@ -43,7 +43,7 @@ public class RedisConfig {
         LoggingRedisSerializer serializer = new LoggingRedisSerializer(objectMapper);
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(30)) // cuantos minutos se mantendrá en cache????
+                //.entryTtl(Duration.ofMinutes(30)) // para que no se cachee por mucho tiempo
                 .disableCachingNullValues()
                 .serializeKeysWith(
                         org.springframework.data.redis.serializer.RedisSerializationContext
