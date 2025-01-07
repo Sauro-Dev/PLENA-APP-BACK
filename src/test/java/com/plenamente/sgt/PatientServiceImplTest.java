@@ -226,11 +226,11 @@ public class PatientServiceImplTest {
                 LocalDate.of(2000, 1, 1),
                 "Diagnosis",
                 true,
-                1L,
                 List.of(tutorDTO)
         );
         Patient existingPatient = new Patient();
         existingPatient.setIdPatient(patientId);
+        existingPatient.setTutors(List.of(new Tutor())); // Initialize the tutors list
 
         when(patientRepository.findById(patientId)).thenReturn(Optional.of(existingPatient));
         when(patientRepository.save(existingPatient)).thenReturn(existingPatient);
@@ -258,7 +258,6 @@ public class PatientServiceImplTest {
                 LocalDate.of(2000, 1, 1),
                 "Diagnosis",
                 true,
-                1L,
                 List.of(tutorDTO)
         );
 
