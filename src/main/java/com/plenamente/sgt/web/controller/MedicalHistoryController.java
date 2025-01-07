@@ -29,7 +29,15 @@ public class MedicalHistoryController {
     @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/find/{id}")
     public ResponseEntity<List<ListMedicalHistory>> findMedicalHistoryByPatientId(@PathVariable Long id) {
-        List<ListMedicalHistory> medicalHistories = medicalHistoryService.getReport_DocumentByPatientId(id);
-        return ResponseEntity.ok(medicalHistories);
+        try {
+            System.out.println("Recibida petición para el historial médico del paciente ID: " + id);
+            List<ListMedicalHistory> medicalHistories = medicalHistoryService.getReport_DocumentByPatientId(id);
+            System.out.println("Historiales encontrados: " + (medicalHistories != null ? medicalHistories.size() : 0));
+            return ResponseEntity.ok(medicalHistories);
+        } catch (Exception e) {
+            System.err.println("Error al procesar la petición: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

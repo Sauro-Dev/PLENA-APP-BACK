@@ -46,21 +46,35 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
         List<ListMedicalHistory> listMedicalHistories = new ArrayList<>();
 
         for (MedicalHistory medicalHistory : medicalHistories) {
-            List<Report> reports = reportRepository.findByMedicalHistory_IdMedicalHistory(id);
-            List<EvaluationDocument> documents = evaluationDocumentRepository.findByMedicalHistory_IdMedicalHistory(id);
+            Long medicalHistoryId = medicalHistory.getIdMedicalHistory();
+            List<Report> reports = reportRepository.findByMedicalHistory_IdMedicalHistory(medicalHistoryId);
+            List<EvaluationDocument> documents = evaluationDocumentRepository.findByMedicalHistory_IdMedicalHistory(medicalHistoryId);
 
-            for (Report report : reports) {
-                for (EvaluationDocument document : documents) {
-                    ListMedicalHistory listMedicalHistory = new ListMedicalHistory(
-                            report,
-                            document.getName(),
-                            document.getDescription(),
-                            document.getDocumentType(),
-                            document.getArchive(),
-                            medicalHistory.getName(),
-                            medicalHistory.getIdMedicalHistory()
-                    );
-                    listMedicalHistories.add(listMedicalHistory);
+            if (reports.isEmpty() || documents.isEmpty()) {
+                ListMedicalHistory basicHistory = new ListMedicalHistory(
+                        null,           // report
+                        null,           // documentName
+                        null,           // description
+                        null,           // documentType
+                        null,           // archive
+                        medicalHistory.getName(),
+                        medicalHistory.getIdMedicalHistory()
+                );
+                listMedicalHistories.add(basicHistory);
+            } else {
+                for (Report report : reports) {
+                    for (EvaluationDocument document : documents) {
+                        ListMedicalHistory listMedicalHistory = new ListMedicalHistory(
+                                report,
+                                document.getName(),
+                                document.getDescription(),
+                                document.getDocumentType(),
+                                document.getArchive(),
+                                medicalHistory.getName(),
+                                medicalHistory.getIdMedicalHistory()
+                        );
+                        listMedicalHistories.add(listMedicalHistory);
+                    }
                 }
             }
         }
