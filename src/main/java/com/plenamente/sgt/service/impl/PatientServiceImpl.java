@@ -107,6 +107,24 @@ public class PatientServiceImpl implements PatientService {
         int calculatedAge = Period.between(updatePatient.birthdate(), LocalDate.now()).getYears();
         existingPatient.setAge(calculatedAge);
 
+        if (updatePatient.tutors() != null) {
+            List<Tutor> existingTutors = existingPatient.getTutors();
+            if (existingTutors.size() != updatePatient.tutors().size()) {
+                throw new IllegalArgumentException("El número de tutores proporcionados no coincide con los tutores registrados.");
+            }
+
+            for (int i = 0; i < updatePatient.tutors().size(); i++) {
+                Tutor existingTutor = existingTutors.get(i);
+                TutorDTO tutorDto = updatePatient.tutors().get(i);
+                validateTutorData(tutorDto);
+
+                existingTutor.setFullName(tutorDto.fullName());
+                existingTutor.setDni(tutorDto.dni());
+                existingTutor.setPhone(tutorDto.phone());
+                existingTutor.setPatient(existingPatient);
+            }
+        }
+
         return patientRepository.save(existingPatient);
     }
 
@@ -135,6 +153,20 @@ public class PatientServiceImpl implements PatientService {
         } else {
             return patientRepository.findAllByOrderByNameDesc()
                     .stream().map(this::mapToListPatient).collect(Collectors.toList());
+        }
+    }
+
+    private void validateTutorData(TutorDTO tutorDto) {
+        if (tutorDto.fullName() == null || tutorDto.fullName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre completo del tutor no puede estar vacío.");
+        }
+
+        if (tutorDto.dni() == null || !tutorDto.dni().matches("\\d+")) {
+            throw new IllegalArgumentException("El DNI del tutor debe ser numérico y no nulo.");
+        }
+
+        if (tutorDto.phone() == null || !tutorDto.phone().matches("\\d+")) {
+            throw new IllegalArgumentException("El teléfono del tutor debe ser numérico y no nulo.");
         }
     }
 

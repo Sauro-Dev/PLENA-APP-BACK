@@ -1,12 +1,9 @@
 package com.plenamente.sgt.web.controller;
 
-import com.plenamente.sgt.domain.dto.MedicalHistoryDto.RegisterMedicalHistory;
 import com.plenamente.sgt.domain.dto.ReportDto.RegisterReport;
 import com.plenamente.sgt.domain.dto.ReportDto.ReportDetailsDto;
 import com.plenamente.sgt.domain.dto.ReportDto.UpdateReport;
-import com.plenamente.sgt.domain.entity.MedicalHistory;
 import com.plenamente.sgt.domain.entity.Report;
-import com.plenamente.sgt.service.MedicalHistoryService;
 import com.plenamente.sgt.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/report")
@@ -39,5 +38,12 @@ public class ReportController {
     public ResponseEntity<ReportDetailsDto> selectReport(@PathVariable Long id) {
         ReportDetailsDto report = reportService.findReportById(id);
         return new ResponseEntity<>(report, HttpStatus.OK);
+    }
+
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
+    @GetMapping("/list/{id}")
+    public ResponseEntity<List<ReportDetailsDto>> getReportsByMedicalHistory(@PathVariable Long id) {
+        List<ReportDetailsDto> reports = reportService.findReportsByMedicalHistoryId(id);
+        return ResponseEntity.ok(reports);
     }
 }

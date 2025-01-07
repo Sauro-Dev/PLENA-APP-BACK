@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -47,32 +48,39 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
 
         return evaluationDocumentRepository.save(newEvaluationDocument);
     }
+
+    @Override
+    public UpdateEvaluationDocument updateEvaluationDocument(Long id, UpdateEvaluationDocument evaluationDocumentUp, MultipartFile newFile) {
+        EvaluationDocument existingEvaluationDocument = evaluationDocumentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Documento de evaluación no encontrado con id: " + id));
+
+        MedicalHistory medicalHistory = medicalHistoryRepository.findById(evaluationDocumentUp.idMedicalHistory())
+                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + evaluationDocumentUp.idMedicalHistory()));
+
+        existingEvaluationDocument.setMedicalHistory(medicalHistory);
+        existingEvaluationDocument.setName(evaluationDocumentUp.name());
+        existingEvaluationDocument.setDescription(evaluationDocumentUp.description());
+        existingEvaluationDocument.setDocumentType(evaluationDocumentUp.documentType());
+
+        if (newFile != null && !newFile.isEmpty()) {
+            try {
+                existingEvaluationDocument.setDocumentType(newFile.getContentType());
+                existingEvaluationDocument.setArchive(newFile.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException("Error al actualizar el archivo: " + e.getMessage(), e);
+            }
+        }
+
+        evaluationDocumentRepository.save(existingEvaluationDocument);
+        return evaluationDocumentUp;
+    }
+
     @Override
     public EvaluationDocument downloadEvaluationDocument(Long id) {
         return evaluationDocumentRepository.findById(id)
                 .orElseThrow(()-> new EntityNotFoundException("Historial medico no encontrado con id: " + id));
     }
 
-    @Override
-    public UpdateEvaluationDocument updateEvaluationDocument(Long id, UpdateEvaluationDocument evaluationDocumentUp) {
-        // Buscar el documento de evaluación por ID
-        EvaluationDocument existingEvaluationDocument = evaluationDocumentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Documento de evaluación no encontrado con id: " + id));
-
-        // Obtener el historial médico asociado
-        MedicalHistory medicalHistory = medicalHistoryRepository.findById(evaluationDocumentUp.idMedicalHistory())
-                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + evaluationDocumentUp.idMedicalHistory()));
-
-        // Actualizar los campos del documento de evaluación
-        existingEvaluationDocument.setMedicalHistory(medicalHistory);
-        existingEvaluationDocument.setName(evaluationDocumentUp.name());
-        existingEvaluationDocument.setDescription(evaluationDocumentUp.description());
-        existingEvaluationDocument.setDocumentType(evaluationDocumentUp.documentType());
-
-        evaluationDocumentRepository.save(existingEvaluationDocument);
-        // Guardar los cambios en el repositorio
-        return evaluationDocumentUp;
-    }
     @Override
     public EvaluationDocumentDetailsDto findEvaluationDocumentById(Long id) {
         EvaluationDocument document = evaluationDocumentRepository.findById(id)
@@ -85,5 +93,22 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
                 document.getDocumentType(),
                 document.getArchive()
         );
+    }
+
+    @Override
+    public List<EvaluationDocumentDetailsDto> findDocumentsByMedicalHistoryId(Long medicalHistoryId) {
+        MedicalHistory medicalHistory = medicalHistoryRepository.findById(medicalHistoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + medicalHistoryId));
+
+        return evaluationDocumentRepository.findByMedicalHistory(medicalHistory)
+                .stream()
+                .map(doc -> new EvaluationDocumentDetailsDto(
+                        doc.getIdDocument(),
+                        doc.getMedicalHistory().getIdMedicalHistory(),
+                        doc.getName(),
+                        doc.getDescription(),
+                        doc.getDocumentType(),
+                        doc.getArchive()
+                )).toList();
     }
 }

@@ -16,7 +16,6 @@ public record UpdatePatient(
         @Past LocalDate birthdate,
         @Null @Length(max = 255) String presumptiveDiagnosis,
         boolean status,
-        @NotNull Long idPlan,
         List<TutorDTO> tutors
 ) {
 }
