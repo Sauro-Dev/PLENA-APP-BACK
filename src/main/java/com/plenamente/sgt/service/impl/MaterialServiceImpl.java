@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -53,9 +54,10 @@ public class MaterialServiceImpl implements MaterialService {
         Material savedMaterial = materialRepository.save(material);
 
         // Limpiar la cache de materiales y actualizarla
-        cacheManager.getCache("materials").clear();
+        Objects.requireNonNull(cacheManager.getCache("materials")).clear();
+        clearMaterialsCache();
         updateMaterialsCache();
-
+        updateUnassignedMaterialsCache();
         return savedMaterial;
     }
 
@@ -98,7 +100,7 @@ public class MaterialServiceImpl implements MaterialService {
 
     public void clearMaterialsCache() {
         redisTemplate.delete(MATERIALS_CACHE_KEY);
-        cacheManager.getCache("materials").clear();
+        Objects.requireNonNull(cacheManager.getCache("materials")).clear();
     }
 
     @Override
@@ -193,8 +195,20 @@ public class MaterialServiceImpl implements MaterialService {
 
         // Actualizar la caché
         updateMaterialsCache();
+        updateUnassignedMaterialsCache();
 
         return savedMaterial;
+    }
+
+    @Override
+    public void updateUnassignedMaterialsCache() {
+        log.info("Actualizando caché de materiales no asignados");
+        List<Material> unassignedMaterials = materialRepository.findByRoomIsNull();
+        List<RegisterMaterial> unassignedMaterialDTOs = unassignedMaterials.stream()
+                .map(materialMapper::toDTO)
+                .toList();
+        redisTemplate.opsForValue().set("unassigned_" + MATERIALS_CACHE_KEY, unassignedMaterialDTOs);
+        log.info("Caché de materiales no asignados actualizada con {} materiales", unassignedMaterialDTOs.size());
     }
 
     @Override
@@ -207,13 +221,13 @@ public class MaterialServiceImpl implements MaterialService {
 
         // Actualizar la caché
         updateMaterialsCache();
+        updateUnassignedMaterialsCache();
 
         return savedMaterial;
     }
 
     @Override
     public List<RegisterMaterial> getUnassignedMaterials() {
-        log.info("Intentando obtener materiales no asignados de la caché");
         // Intentar obtener de la caché
         @SuppressWarnings("unchecked")
         List<RegisterMaterial> cachedUnassignedMaterials = (List<RegisterMaterial>) redisTemplate
@@ -221,20 +235,17 @@ public class MaterialServiceImpl implements MaterialService {
                 .get("unassigned_" + MATERIALS_CACHE_KEY);
 
         if (cachedUnassignedMaterials == null) {
-            log.info("No se encontraron materiales no asignados en caché, obteniendo de la base de datos");
             // Si no está en caché, obtener de la base de datos
             List<Material> materials = materialRepository.findByRoomIsNull();
             List<RegisterMaterial> materialDTOs = materials.stream()
                     .map(materialMapper::toDTO)
                     .toList();
 
-            log.info("Guardando {} materiales no asignados en caché", materialDTOs.size());
             // Guardar en caché
             redisTemplate.opsForValue().set("unassigned_" + MATERIALS_CACHE_KEY, materialDTOs);
             return materialDTOs;
         }
 
-        log.info("Retornando {} materiales no asignados desde caché", cachedUnassignedMaterials.size());
         return cachedUnassignedMaterials;
     }
 
