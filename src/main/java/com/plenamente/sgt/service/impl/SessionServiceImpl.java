@@ -83,7 +83,8 @@ public class SessionServiceImpl implements SessionService {
 
         User user = userRepository.findById(dto.therapistId())
                 .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado"));
-        if (!(user instanceof Therapist)) {
+
+        if (!user.isTherapist()) {
             throw new IllegalArgumentException("El usuario no es un terapeuta válido.");
         }
 
@@ -124,7 +125,7 @@ public class SessionServiceImpl implements SessionService {
             session.setStartTime(dto.startTime());
             session.setEndTime(dto.startTime().plusMinutes(50));
             session.setPatient(patient);
-            session.setTherapist((Therapist) user);
+            session.setTherapist(user);
             session.setPlan(plan);
             session.setRoom(room);
             session.setTherapistPresent(false);
@@ -170,7 +171,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public List<ListSession> getSessionsByTherapist(Long therapistId) {
         userRepository.findById(therapistId)
-                .filter(user -> user instanceof Therapist)
+                .filter(User::isTherapist)
                 .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado"));
 
         return sessionRepository.findByTherapist_IdUser(therapistId)
@@ -282,7 +283,8 @@ public class SessionServiceImpl implements SessionService {
         session.setSessionDate(dto.sessionDate());
         session.setStartTime(dto.startTime());
         session.setEndTime(dto.startTime().plusMinutes(50));
-        session.setTherapist((Therapist) userRepository.findById(dto.therapistId())
+        session.setTherapist(userRepository.findById(dto.therapistId())
+                .filter(User::isTherapist)
                 .orElseThrow(() -> new EntityNotFoundException("Terapeuta no encontrado.")));
         session.setRoom(roomRepository.findById(dto.roomId())
                 .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada.")));

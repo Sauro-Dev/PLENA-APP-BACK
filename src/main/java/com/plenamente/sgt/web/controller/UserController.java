@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -67,7 +68,24 @@ public class UserController {
 
     @GetMapping("/all-therapists")
     public ResponseEntity<List<ListUser>> getAllTherapists() {
-        List<ListUser> therapists = userService.getAllTherapists();
+        List<User> therapyCapableUsers = userService.getAllTherapyCapableUsers();
+        List<ListUser> therapists = therapyCapableUsers.stream()
+                .map(user -> new ListUser(
+                        user.getIdUser(),
+                        user.getUsername(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRol(),
+                        user.getPaternalSurname(),
+                        user.getMaternalSurname(),
+                        user.getDni(),
+                        user.getPhone(),
+                        user.getPhoneBackup(),
+                        user.getAddress(),
+                        user.getBirthdate(),
+                        user.isEnabled()
+                ))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(therapists);
     }
 

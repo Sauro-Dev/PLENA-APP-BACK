@@ -32,7 +32,7 @@ public class Session {
 
     @ManyToOne
     @JoinColumn(name = "therapist_id", nullable = false)
-    private Therapist therapist;
+    private User therapist;
 
     @ManyToOne
     @JoinColumn(name = "room_id", nullable = false)
