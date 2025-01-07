@@ -40,6 +40,7 @@ public class MedicalHistoryServiceImpl implements MedicalHistoryService {
         medicalHistory.setName(registerMedicalHistory.name());
         return medicalHistoryRepository.save(medicalHistory);
     }
+
     @Override
     public List<ListMedicalHistory> getReport_DocumentByPatientId(Long id) {
         List<MedicalHistory> medicalHistories = medicalHistoryRepository.findByPatient_IdPatient(id);

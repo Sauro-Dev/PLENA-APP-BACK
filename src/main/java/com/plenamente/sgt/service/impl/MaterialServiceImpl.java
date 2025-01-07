@@ -13,8 +13,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,6 +108,8 @@ public class MaterialServiceImpl implements MaterialService {
     }
 
     @Override
+    @Transactional
+    @CachePut(value = "materials", key = "#id")
     public Material updateMaterial(String id, RegisterMaterial updatedMaterial) {
         Material existingMaterial = materialRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Material no encontrado con id: " + id));
@@ -119,13 +121,25 @@ public class MaterialServiceImpl implements MaterialService {
         existingMaterial.setEsSoporte(updatedMaterial.esSoporte());
         existingMaterial.setEstado(updatedMaterial.estado());
 
-        return materialRepository.save(existingMaterial);
+        Material savedMaterial = materialRepository.save(existingMaterial);
+
+        // Actualizar la caché
+        updateMaterialsCache();
+
+        return savedMaterial;
     }
+
+    @Override
     @Transactional
-    public void deleteMaterial(String materialId){
+    @CacheEvict(value = "materials", key = "#materialId")
+    public void deleteMaterial(String materialId) {
         areaRepository.deleteByMaterial_IdMaterial(materialId);
         materialRepository.deleteById(materialId);
+
+        // Limpiar la caché de materiales
+        clearMaterialsCache();
     }
+
     public String generateNextMaterialId() {
         // Obtener el último ID insertado
         Optional<Material> lastMaterialOpt = materialRepository.findTopByOrderByIdMaterialDesc();
@@ -175,7 +189,12 @@ public class MaterialServiceImpl implements MaterialService {
         }
 
         material.setRoom(room);
-        return materialRepository.save(material);
+        Material savedMaterial = materialRepository.save(material);
+
+        // Actualizar la caché
+        updateMaterialsCache();
+
+        return savedMaterial;
     }
 
     @Override
@@ -184,16 +203,39 @@ public class MaterialServiceImpl implements MaterialService {
                 .orElseThrow(() -> new EntityNotFoundException("Material no encontrado con id: " + materialId));
 
         material.setRoom(null);
-        return materialRepository.save(material);
+        Material savedMaterial = materialRepository.save(material);
+
+        // Actualizar la caché
+        updateMaterialsCache();
+
+        return savedMaterial;
     }
 
     @Override
     public List<RegisterMaterial> getUnassignedMaterials() {
-        List<Material> materials = materialRepository.findByRoomIsNull();
-        return materials.stream()
-                .map(materialMapper::toDTO)
-                .toList();
-    }
+        log.info("Intentando obtener materiales no asignados de la caché");
+        // Intentar obtener de la caché
+        @SuppressWarnings("unchecked")
+        List<RegisterMaterial> cachedUnassignedMaterials = (List<RegisterMaterial>) redisTemplate
+                .opsForValue()
+                .get("unassigned_" + MATERIALS_CACHE_KEY);
 
+        if (cachedUnassignedMaterials == null) {
+            log.info("No se encontraron materiales no asignados en caché, obteniendo de la base de datos");
+            // Si no está en caché, obtener de la base de datos
+            List<Material> materials = materialRepository.findByRoomIsNull();
+            List<RegisterMaterial> materialDTOs = materials.stream()
+                    .map(materialMapper::toDTO)
+                    .toList();
+
+            log.info("Guardando {} materiales no asignados en caché", materialDTOs.size());
+            // Guardar en caché
+            redisTemplate.opsForValue().set("unassigned_" + MATERIALS_CACHE_KEY, materialDTOs);
+            return materialDTOs;
+        }
+
+        log.info("Retornando {} materiales no asignados desde caché", cachedUnassignedMaterials.size());
+        return cachedUnassignedMaterials;
+    }
 
 }
