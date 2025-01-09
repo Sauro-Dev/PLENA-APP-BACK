@@ -2,9 +2,8 @@ package com.plenamente.sgt.domain.dto.SessionDto;
 
 import jakarta.validation.constraints.NotNull;
 
-public record MarkPresenceSession(
+public record MarkPatientPresenceSession(
         @NotNull Long sessionId,
-        boolean therapistPresent,
         boolean patientPresent
 ) {
 }

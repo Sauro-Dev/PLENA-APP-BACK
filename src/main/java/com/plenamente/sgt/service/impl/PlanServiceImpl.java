@@ -20,6 +20,11 @@ public class PlanServiceImpl implements PlanService {
     @Transactional
     @Override
     public Plan createPlan(CreatePlanDto createPlanDto) {
+        boolean planExists = planRepository.existsByNumOfSessions(createPlanDto.numOfSessions());
+        if (planExists) {
+            throw new IllegalArgumentException("Ya existe un plan con la misma cantidad de sesiones.");
+        }
+
         Plan plan = new Plan();
         plan.setNumOfSessions(createPlanDto.numOfSessions());
         plan.setWeeks(4);
