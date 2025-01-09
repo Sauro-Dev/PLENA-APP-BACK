@@ -18,5 +18,6 @@ public record ListPatient(
         Long planId,
         List<TutorDTO> tutors,
         String presumptiveDiagnosis,
-        boolean status
+        boolean status,
+        String planStatus
 ) {}

@@ -7,10 +7,12 @@ import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Plan;
+import com.plenamente.sgt.domain.entity.Session;
 import com.plenamente.sgt.domain.entity.Tutor;
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
+import com.plenamente.sgt.infra.repository.SessionRepository;
 import com.plenamente.sgt.service.PatientService;
 import com.plenamente.sgt.service.SessionService;
 import jakarta.transaction.Transactional;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +32,7 @@ public class PatientServiceImpl implements PatientService {
     private final PatientRepository patientRepository;
     private final PlanRepository planRepository;
     private final SessionService sessionService;
+    private final SessionRepository sessionRepository;
 
     @Transactional
     @Override
@@ -128,6 +132,58 @@ public class PatientServiceImpl implements PatientService {
         return patientRepository.save(existingPatient);
     }
 
+    private String calculatePlanStatus(Patient patient) {
+        Plan plan = patient.getIdPlan();
+        if (plan == null || plan.getNumOfSessions() == null || plan.getWeeks() == null) {
+            return "SIN PLAN";
+        }
+
+        LocalDate startDate = calculatePlanStartDate(patient);
+        LocalDate endDate = calculatePlanEndDate(startDate, plan.getWeeks());
+
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(startDate)) {
+            return "EN ESPERA";
+        } else if (today.isAfter(endDate)) {
+            return "COMPLETADO";
+        }
+
+        List<Session> sessions = sessionRepository.findByPatient_IdPatient(patient.getIdPatient());
+        if (sessions.isEmpty()) {
+            return "EN CURSO";
+        }
+
+        long completedSessions = sessions.stream()
+                .filter(this::isSessionValid)
+                .count();
+        int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
+
+        return completedSessions >= totalSessions ? "COMPLETO" : "EN CURSO";
+    }
+
+    private LocalDate calculatePlanStartDate(Patient patient) {
+        return sessionRepository.findByPatient_IdPatientOrderBySessionDateAsc(patient.getIdPatient())
+                .stream()
+                .findFirst()
+                .map(Session::getSessionDate)
+                .orElseThrow(() -> new IllegalStateException("No se encontraron sesiones para calcular la fecha de inicio del plan."));
+    }
+
+    private LocalDate calculatePlanEndDate(LocalDate startDate, int weeks) {
+        return startDate.plusWeeks(weeks - 1);
+    }
+
+
+    private boolean isSessionValid(Session session) {
+        boolean therapistPresent = session.isTherapistPresent();
+        boolean patientCondition = session.isPatientPresent() || session.getReason() == null;
+        boolean sessionFinished = session.getEndTime().isBefore(LocalTime.now())
+                && session.getSessionDate().isBefore(LocalDate.now());
+
+        return therapistPresent && patientCondition && sessionFinished;
+    }
+
+
     @Override
     public boolean isDNITaken(String dni) {
         return patientRepository.existsByDni(dni);
@@ -184,7 +240,8 @@ public class PatientServiceImpl implements PatientService {
                         .map(tutor -> new TutorDTO(tutor.getFullName(), tutor.getDni(), tutor.getPhone()))
                         .collect(Collectors.toList()),
                 patient.getPresumptiveDiagnosis(),
-                patient.isStatus()
+                patient.isStatus(),
+                calculatePlanStatus(patient)
         );
     }
 }

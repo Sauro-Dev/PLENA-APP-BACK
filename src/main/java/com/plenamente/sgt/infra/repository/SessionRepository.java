@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     List<Session> findByRoom_IdRoom(Long roomId);
 
     List<Session> findBySessionDateGreaterThanEqual(LocalDate date);
+
+    List<Session> findByPatient_IdPatient(Long idPatient);
+
+    List<Session> findByPatient_IdPatientOrderBySessionDateAsc(Long idPatient);
 }
