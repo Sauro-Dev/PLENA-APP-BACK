@@ -1,9 +1,7 @@
 package com.plenamente.sgt;
 
 import com.plenamente.sgt.domain.entity.Admin;
-import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Rol;
-import com.plenamente.sgt.infra.repository.PlanRepository;
 import com.plenamente.sgt.infra.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +11,6 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.context.annotation.Bean;
 import java.time.LocalDate;
-import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -22,7 +19,7 @@ public class SgtApplication {
 
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final PlanRepository planRepository;
+
 
 	public static void main(String[] args) {
 		SpringApplication.run(SgtApplication.class, args);
@@ -48,36 +45,6 @@ public class SgtApplication {
 				defaultAdmin.setEnabled(true);
 
 				userRepository.save(defaultAdmin);
-			}
-			if (planRepository.findAll().isEmpty()) {
-				Plan planA = new Plan();
-				planA.setNumOfSessions(1);
-				planA.setWeeks(4);
-
-				Plan planB = new Plan();
-				planB.setNumOfSessions(2);
-				planB.setWeeks(4);
-
-				Plan planC = new Plan();
-				planC.setNumOfSessions(3);
-				planC.setWeeks(4);
-
-				Plan planD = new Plan();
-				planD.setNumOfSessions(5);
-				planD.setWeeks(4);
-
-				planRepository.save(planA);
-				planRepository.save(planB);
-				planRepository.save(planC);
-				planRepository.save(planD);
-			} else {
-				List<Plan> plans = planRepository.findAll();
-				for (Plan plan : plans) {
-					if (plan.getWeeks() == null) {
-						plan.setWeeks(4);
-						planRepository.save(plan);
-					}
-				}
 			}
 		};
 	}
