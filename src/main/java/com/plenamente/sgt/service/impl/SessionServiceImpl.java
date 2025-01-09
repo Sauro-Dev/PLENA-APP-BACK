@@ -275,6 +275,14 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findByIdSession(dto.idSession())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada."));
 
+        if (isNotWorkingDay(dto.sessionDate())) {
+            throw new IllegalArgumentException("La fecha proporcionada es un día no laborable (domingo).");
+        }
+
+        if (isInvalidTime(dto.startTime())) {
+            throw new IllegalArgumentException("El horario proporcionado está fuera de las horas laborales permitidas.");
+        }
+
         validateTherapistAndRoomAvailabilityUpdate(dto.therapistId(), dto.roomId(), dto.sessionDate(), dto.startTime(), dto.startTime().plusMinutes(50), dto.idSession());
 
         session.setSessionDate(dto.sessionDate());
