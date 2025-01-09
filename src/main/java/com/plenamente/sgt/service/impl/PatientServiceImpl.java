@@ -91,6 +91,7 @@ public class PatientServiceImpl implements PatientService {
         Patient patient = patientRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Paciente no encontrado.")
         );
+        calculatePlanStatus(patient);
         return mapToListPatient(patient);
     }
 
@@ -145,6 +146,7 @@ public class PatientServiceImpl implements PatientService {
         if (today.isBefore(startDate)) {
             return "EN ESPERA";
         } else if (today.isAfter(endDate)) {
+            updatePatientStatusToInactive(patient);
             return "COMPLETADO";
         }
 
@@ -158,7 +160,12 @@ public class PatientServiceImpl implements PatientService {
                 .count();
         int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
 
-        return completedSessions >= totalSessions ? "COMPLETO" : "EN CURSO";
+        if (completedSessions >= totalSessions) {
+            updatePatientStatusToInactive(patient);
+            return "COMPLETO";
+        }
+
+        return "EN CURSO";
     }
 
     private LocalDate calculatePlanStartDate(Patient patient) {
@@ -167,6 +174,13 @@ public class PatientServiceImpl implements PatientService {
                 .findFirst()
                 .map(Session::getSessionDate)
                 .orElseThrow(() -> new IllegalStateException("No se encontraron sesiones para calcular la fecha de inicio del plan."));
+    }
+
+    private void updatePatientStatusToInactive(Patient patient) {
+        if (patient.isStatus()) {
+            patient.setStatus(false);
+            patientRepository.save(patient);
+        }
     }
 
     private LocalDate calculatePlanEndDate(LocalDate startDate, int weeks) {
@@ -227,6 +241,12 @@ public class PatientServiceImpl implements PatientService {
     }
 
     private ListPatient mapToListPatient(Patient patient) {
+        String planStatus = calculatePlanStatus(patient);
+
+        if ("COMPLETADO".equals(planStatus) && patient.isStatus()) {
+            updatePatientStatusToInactive(patient);
+        }
+
         return new ListPatient(
                 patient.getIdPatient(),
                 patient.getName(),
@@ -241,7 +261,7 @@ public class PatientServiceImpl implements PatientService {
                         .collect(Collectors.toList()),
                 patient.getPresumptiveDiagnosis(),
                 patient.isStatus(),
-                calculatePlanStatus(patient)
+                planStatus
         );
     }
 }
