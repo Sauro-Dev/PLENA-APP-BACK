@@ -6,10 +6,7 @@ import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
-import com.plenamente.sgt.domain.entity.Patient;
-import com.plenamente.sgt.domain.entity.Plan;
-import com.plenamente.sgt.domain.entity.Session;
-import com.plenamente.sgt.domain.entity.Tutor;
+import com.plenamente.sgt.domain.entity.*;
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
@@ -63,6 +60,13 @@ public class PatientServiceImpl implements PatientService {
 
         patient.setTutors(tutors);
 
+        LocalDate firstSessionDate = registerPatient.firstWeekDates()
+                .stream()
+                .min(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se encontraron fechas para las sesiones iniciales."));
+
+        setInitialPlanStatus(patient, firstSessionDate);
+
         Patient savedPatient = patientRepository.save(patient);
 
         RegisterSession sessionData = new RegisterSession(
@@ -82,11 +86,21 @@ public class PatientServiceImpl implements PatientService {
     public List<ListPatient> getAllPatients() {
         List<Patient> patients = patientRepository.findAll();
 
-        return patients.stream().map(patient -> {
-            calculatePlanStatus(patient);
-            patientRepository.save(patient);
-            return mapToListPatient(patient);
-        }).collect(Collectors.toList());
+        patients.forEach(patient -> {
+            try {
+                calculatePlanStatus(patient);
+            } catch (Exception e) {
+                throw new IllegalStateException("Error al calcular el estado del plan para el paciente: " +
+                        patient.getName(), e);
+            }
+        });
+
+        patients = patients.stream().distinct().toList();
+        patientRepository.saveAll(patients);
+
+        return patients.stream()
+                .map(this::mapToListPatient)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -149,17 +163,12 @@ public class PatientServiceImpl implements PatientService {
             throw new IllegalStateException("El paciente ya está activo. No es posible renovar el plan.");
         }
 
-        String planStatus = calculatePlanStatus(patient);
-        if (!"COMPLETADO".equals(planStatus)) {
+        if (!PlanStatus.COMPLETADO.equals(patient.getPlanStatus())) {
             throw new IllegalStateException("El plan actual del paciente no está completado. No se puede renovar.");
         }
 
         Plan newPlan = planRepository.findById(renewPlanDto.newPlanId())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado."));
-
-        if (newPlan.getNumOfSessions() <= 0 || newPlan.getWeeks() <= 0) {
-            throw new IllegalArgumentException("El plan debe tener un número válido de sesiones y semanas.");
-        }
 
         patient.setIdPlan(newPlan);
         patient.setStatus(true);
@@ -173,67 +182,54 @@ public class PatientServiceImpl implements PatientService {
         );
         sessionService.createSession(sessionData);
 
-        LocalDate planStartDate = renewPlanDto.firstWeekDates().stream()
-                .min(LocalDate::compareTo)
-                .orElseThrow(() -> new IllegalStateException("No se encontraron fechas para las sesiones iniciales."));
-
-        LocalDate today = LocalDate.now();
-        if (today.isBefore(planStartDate)) {
-            patient.setPlanStatus("EN ESPERA");
-        } else {
-            patient.setPlanStatus("EN CURSO");
-        }
+        calculatePlanStatus(patient);
 
         return patientRepository.save(patient);
     }
 
-    private String calculatePlanStatus(Patient patient) {
+    private void calculatePlanStatus(Patient patient) {
         Plan plan = patient.getIdPlan();
-        if (plan == null || plan.getNumOfSessions() == null || plan.getWeeks() == null) {
-            patient.setPlanStatus("SIN PLAN");
-            return "SIN PLAN";
+        List<Session> sessions = sessionRepository.findByPatient_IdPatient(patient.getIdPatient());
+
+        if (sessions.isEmpty()) {
+            throw new IllegalStateException("No hay sesiones asociadas al paciente para calcular el estado del plan.");
         }
 
-        LocalDate startDate = calculatePlanStartDate(patient);
-        LocalDate endDate = calculatePlanEndDate(startDate, plan.getWeeks());
+        LocalDate startDate = sessions.stream()
+                .map(Session::getSessionDate)
+                .min(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de inicio del plan."));
+
+        LocalDate endDate = startDate.plusWeeks(plan.getWeeks() - 1);
         LocalDate today = LocalDate.now();
 
         if (today.isBefore(startDate)) {
-            patient.setPlanStatus("EN ESPERA");
-            return "EN ESPERA";
+            patient.setPlanStatus(PlanStatus.EN_ESPERA);
         } else if (today.isAfter(endDate)) {
             updatePatientStatusToInactive(patient);
-            patient.setPlanStatus("COMPLETADO");
-            return "COMPLETADO";
+            patient.setPlanStatus(PlanStatus.COMPLETADO);
+        } else {
+            long completedSessions = sessions.stream().filter(this::isSessionValid).count();
+            int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
+
+            if (completedSessions >= totalSessions) {
+                updatePatientStatusToInactive(patient);
+                patient.setPlanStatus(PlanStatus.COMPLETADO);
+            } else {
+                patient.setPlanStatus(PlanStatus.EN_CURSO);
+            }
         }
 
-        List<Session> sessions = sessionRepository.findByPatient_IdPatient(patient.getIdPatient());
-        if (sessions.isEmpty()) {
-            patient.setPlanStatus("EN CURSO");
-            return "EN CURSO";
-        }
-
-        long completedSessions = sessions.stream()
-                .filter(this::isSessionValid)
-                .count();
-        int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
-
-        if (completedSessions >= totalSessions) {
-            updatePatientStatusToInactive(patient);
-            patient.setPlanStatus("COMPLETO");
-            return "COMPLETO";
-        }
-
-        patient.setPlanStatus("EN CURSO");
-        return "EN CURSO";
+        patientRepository.save(patient);
     }
 
-    private LocalDate calculatePlanStartDate(Patient patient) {
-        return sessionRepository.findByPatient_IdPatientOrderBySessionDateAsc(patient.getIdPatient())
-                .stream()
-                .findFirst()
-                .map(Session::getSessionDate)
-                .orElseThrow(() -> new IllegalStateException("No se encontraron sesiones para calcular la fecha de inicio del plan."));
+    private void setInitialPlanStatus(Patient patient, LocalDate firstSessionDate) {
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(firstSessionDate)) {
+            patient.setPlanStatus(PlanStatus.EN_ESPERA);
+        } else {
+            patient.setPlanStatus(PlanStatus.EN_CURSO);
+        }
     }
 
     private void updatePatientStatusToInactive(Patient patient) {
@@ -301,9 +297,7 @@ public class PatientServiceImpl implements PatientService {
     }
 
     private ListPatient mapToListPatient(Patient patient) {
-        calculatePlanStatus(patient);
-
-        if ("COMPLETADO".equals(patient.getPlanStatus()) && patient.isStatus()) {
+        if (PlanStatus.COMPLETADO.equals(patient.getPlanStatus()) && patient.isStatus()) {
             updatePatientStatusToInactive(patient);
         }
 
@@ -321,7 +315,7 @@ public class PatientServiceImpl implements PatientService {
                         .collect(Collectors.toList()),
                 patient.getPresumptiveDiagnosis(),
                 patient.isStatus(),
-                patient.getPlanStatus()
+                patient.getPlanStatus().name()
         );
     }
 }

@@ -1,12 +1,12 @@
 package com.plenamente.sgt.infra.repository;
 
 import com.plenamente.sgt.domain.entity.Session;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,5 +37,4 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     List<Session> findByPatient_IdPatient(Long idPatient);
 
-    List<Session> findByPatient_IdPatientOrderBySessionDateAsc(Long idPatient);
 }

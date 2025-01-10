@@ -39,5 +39,6 @@ public class Patient {
     private List<Tutor> tutors;
 
     private boolean status = true;
-    private String planStatus;
+    @Enumerated(EnumType.STRING)
+    private PlanStatus planStatus;
 }
