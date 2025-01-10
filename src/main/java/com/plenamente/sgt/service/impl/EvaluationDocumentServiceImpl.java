@@ -1,114 +1,107 @@
 package com.plenamente.sgt.service.impl;
 
-import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.EvaluationDocumentDetailsDto;
-import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.RegisterEvaluationDocument;
-import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.UpdateEvaluationDocument;
+import com.plenamente.sgt.domain.dto.EvaluationDocumentDto.EvaluationDocumentDto;
 import com.plenamente.sgt.domain.entity.EvaluationDocument;
 import com.plenamente.sgt.domain.entity.MedicalHistory;
+import com.plenamente.sgt.domain.entity.Patient;
+import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.EvaluationDocumentRepository;
 import com.plenamente.sgt.infra.repository.MedicalHistoryRepository;
+import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.service.EvaluationDocumentService;
-import jakarta.persistence.EntityNotFoundException;
+import com.plenamente.sgt.service.StorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 @Service
+@Transactional
+@Slf4j
+@RequiredArgsConstructor
 public class EvaluationDocumentServiceImpl implements EvaluationDocumentService {
-    @Autowired
-    private EvaluationDocumentRepository evaluationDocumentRepository;
-    @Autowired
-    private MedicalHistoryRepository medicalHistoryRepository;
+
+    private final EvaluationDocumentRepository documentRepository;
+    private final MedicalHistoryRepository medicalHistoryRepository;
+    private final ModelMapper modelMapper;
+    private final StorageService storageService;
+    private final PatientRepository patientRepository;
 
     @Override
-    public EvaluationDocument createEvaluationDocument(RegisterEvaluationDocument evaluationDocument, MultipartFile file){
-        EvaluationDocument newEvaluationDocument = new EvaluationDocument();
-        MedicalHistory medicalHistory = medicalHistoryRepository.findById(evaluationDocument.idMedicalHistory())
-                .orElseThrow(()-> new EntityNotFoundException("Historial medico no encontrado con id: " + evaluationDocument.idMedicalHistory()));
-        newEvaluationDocument.setMedicalHistory(medicalHistory);
-        newEvaluationDocument.setName(evaluationDocument.name());
-        newEvaluationDocument.setDescription(evaluationDocument.description());
-        newEvaluationDocument.setDocumentType(evaluationDocument.documentType());
-        if (file != null && !file.isEmpty()) {
-            try {
-                newEvaluationDocument.setDocumentType(file.getContentType());
-                byte[] archive = file.getBytes();
-                newEvaluationDocument.setArchive(archive);
-            } catch (IOException e) {
-                throw new RuntimeException("Error al almacenar el archivo: " + e.getMessage(), e);
-            }
-        } else {
-            throw new IllegalArgumentException("El archivo no puede estar vacío.");
-        }
+    public EvaluationDocumentDto uploadDocument(Long patientId, Long medicalHistoryId, MultipartFile file, EvaluationDocumentDto dto) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
 
-        return evaluationDocumentRepository.save(newEvaluationDocument);
-    }
-
-    @Override
-    public UpdateEvaluationDocument updateEvaluationDocument(Long id, UpdateEvaluationDocument evaluationDocumentUp, MultipartFile newFile) {
-        EvaluationDocument existingEvaluationDocument = evaluationDocumentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Documento de evaluación no encontrado con id: " + id));
-
-        MedicalHistory medicalHistory = medicalHistoryRepository.findById(evaluationDocumentUp.idMedicalHistory())
-                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + evaluationDocumentUp.idMedicalHistory()));
-
-        existingEvaluationDocument.setMedicalHistory(medicalHistory);
-        existingEvaluationDocument.setName(evaluationDocumentUp.name());
-        existingEvaluationDocument.setDescription(evaluationDocumentUp.description());
-        existingEvaluationDocument.setDocumentType(evaluationDocumentUp.documentType());
-
-        if (newFile != null && !newFile.isEmpty()) {
-            try {
-                existingEvaluationDocument.setDocumentType(newFile.getContentType());
-                existingEvaluationDocument.setArchive(newFile.getBytes());
-            } catch (IOException e) {
-                throw new RuntimeException("Error al actualizar el archivo: " + e.getMessage(), e);
-            }
-        }
-
-        evaluationDocumentRepository.save(existingEvaluationDocument);
-        return evaluationDocumentUp;
-    }
-
-    @Override
-    public EvaluationDocument downloadEvaluationDocument(Long id) {
-        return evaluationDocumentRepository.findById(id)
-                .orElseThrow(()-> new EntityNotFoundException("Historial medico no encontrado con id: " + id));
-    }
-
-    @Override
-    public EvaluationDocumentDetailsDto findEvaluationDocumentById(Long id) {
-        EvaluationDocument document = evaluationDocumentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Evaluation document not found"));
-        return new EvaluationDocumentDetailsDto(
-                document.getIdDocument(),
-                document.getMedicalHistory().getIdMedicalHistory(),
-                document.getName(),
-                document.getDescription(),
-                document.getDocumentType(),
-                document.getArchive()
-        );
-    }
-
-    @Override
-    public List<EvaluationDocumentDetailsDto> findDocumentsByMedicalHistoryId(Long medicalHistoryId) {
+        // Verificar que el historial médico existe y pertenece al paciente
         MedicalHistory medicalHistory = medicalHistoryRepository.findById(medicalHistoryId)
-                .orElseThrow(() -> new EntityNotFoundException("Historial médico no encontrado con id: " + medicalHistoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Medical History not found with id: " + medicalHistoryId));
 
-        return evaluationDocumentRepository.findByMedicalHistory(medicalHistory)
+        if (!medicalHistory.getPatient().getIdPatient().equals(patientId)) {
+            throw new IllegalArgumentException("Medical History does not belong to the specified patient");
+        }
+
+        // Crear el directorio incluyendo el ID del paciente
+        String directory = String.format("patients/%d/medical-history/%d/evaluations", patientId, medicalHistoryId);
+        String storedFilename = storageService.store(file, directory);
+        String fileUrl = storageService.getFileUrl(storedFilename);
+
+        EvaluationDocument document = new EvaluationDocument();
+        document.setMedicalHistory(medicalHistory);
+        document.setName(dto.getName());
+        document.setDescription(dto.getDescription());
+        document.setFileUrl(fileUrl);
+        document.setFileName(file.getOriginalFilename());
+        document.setContentType(file.getContentType());
+        document.setFileSize(file.getSize());
+        document.setUploadAt(LocalDateTime.now());
+        document.setEvaluationType(dto.getEvaluationType());
+        document.setEvaluationDate(LocalDate.from(dto.getEvaluationDate()));
+
+        document = documentRepository.save(document);
+        return mapToDto(document);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EvaluationDocumentDto getDocument(Long documentId) {
+        return documentRepository.findById(documentId)
+                .map(this::mapToDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
+    }
+
+    @Override
+    public void deleteDocument(Long documentId) {
+        EvaluationDocument document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
+
+        try {
+            storageService.delete(document.getFileUrl());
+        } catch (Exception e) {
+            log.error("Error deleting file: {}", document.getFileUrl(), e);
+        }
+
+        documentRepository.delete(document);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EvaluationDocumentDto> getDocumentsByMedicalHistory(Long medicalHistoryId) {
+        return documentRepository.findByMedicalHistoryIdMedicalHistory(medicalHistoryId)
                 .stream()
-                .map(doc -> new EvaluationDocumentDetailsDto(
-                        doc.getIdDocument(),
-                        doc.getMedicalHistory().getIdMedicalHistory(),
-                        doc.getName(),
-                        doc.getDescription(),
-                        doc.getDocumentType(),
-                        doc.getArchive()
-                )).toList();
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    private EvaluationDocumentDto mapToDto(EvaluationDocument document) {
+        EvaluationDocumentDto dto = modelMapper.map(document, EvaluationDocumentDto.class);
+        dto.setMedicalHistoryId(document.getMedicalHistory().getIdMedicalHistory());
+        return dto;
     }
 }

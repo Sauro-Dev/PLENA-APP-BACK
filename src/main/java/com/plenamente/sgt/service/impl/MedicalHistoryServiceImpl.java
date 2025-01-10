@@ -22,63 +22,14 @@ import java.util.List;
 @Service
 @NoArgsConstructor
 public class MedicalHistoryServiceImpl implements MedicalHistoryService {
-    @Autowired
-    private MedicalHistoryRepository medicalHistoryRepository;
-    @Autowired
-    private PatientRepository patientRepository;
-    @Autowired
-    private ReportRepository reportRepository;
-    @Autowired
-    private EvaluationDocumentRepository evaluationDocumentRepository;
 
     @Override
-    public MedicalHistory createMedicalHistory(RegisterMedicalHistory registerMedicalHistory) {
-        MedicalHistory medicalHistory = new MedicalHistory();
-        Patient patient = patientRepository.findById(registerMedicalHistory.idPatient())
-                .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado con id: " + registerMedicalHistory.idPatient()));
-        medicalHistory.setPatient(patient);
-        medicalHistory.setName(registerMedicalHistory.name());
-        return medicalHistoryRepository.save(medicalHistory);
+    public MedicalHistory createMedicalHistory(RegisterMedicalHistory medicalHistory) {
+        return null;
     }
 
     @Override
     public List<ListMedicalHistory> getReport_DocumentByPatientId(Long id) {
-        List<MedicalHistory> medicalHistories = medicalHistoryRepository.findByPatient_IdPatient(id);
-        List<ListMedicalHistory> listMedicalHistories = new ArrayList<>();
-
-        for (MedicalHistory medicalHistory : medicalHistories) {
-            Long medicalHistoryId = medicalHistory.getIdMedicalHistory();
-            List<Report> reports = reportRepository.findByMedicalHistory_IdMedicalHistory(medicalHistoryId);
-            List<EvaluationDocument> documents = evaluationDocumentRepository.findByMedicalHistory_IdMedicalHistory(medicalHistoryId);
-
-            if (reports.isEmpty() || documents.isEmpty()) {
-                ListMedicalHistory basicHistory = new ListMedicalHistory(
-                        null,           // report
-                        null,           // documentName
-                        null,           // description
-                        null,           // documentType
-                        null,           // archive
-                        medicalHistory.getName(),
-                        medicalHistory.getIdMedicalHistory()
-                );
-                listMedicalHistories.add(basicHistory);
-            } else {
-                for (Report report : reports) {
-                    for (EvaluationDocument document : documents) {
-                        ListMedicalHistory listMedicalHistory = new ListMedicalHistory(
-                                report,
-                                document.getName(),
-                                document.getDescription(),
-                                document.getDocumentType(),
-                                document.getArchive(),
-                                medicalHistory.getName(),
-                                medicalHistory.getIdMedicalHistory()
-                        );
-                        listMedicalHistories.add(listMedicalHistory);
-                    }
-                }
-            }
-        }
-        return listMedicalHistories;
+        return List.of();
     }
 }

@@ -5,9 +5,11 @@ import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
+import com.plenamente.sgt.domain.entity.MedicalHistory;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Tutor;
+import com.plenamente.sgt.infra.repository.MedicalHistoryRepository;
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
@@ -29,6 +31,7 @@ public class PatientServiceImpl implements PatientService {
     private final PatientRepository patientRepository;
     private final PlanRepository planRepository;
     private final SessionService sessionService;
+    private final MedicalHistoryRepository medicalHistoryRepository;
 
     @Transactional
     @Override
@@ -59,6 +62,11 @@ public class PatientServiceImpl implements PatientService {
         patient.setTutors(tutors);
 
         Patient savedPatient = patientRepository.save(patient);
+
+        // Crear automáticamente el historial médico
+        MedicalHistory medicalHistory = new MedicalHistory();
+        medicalHistory.setPatient(savedPatient);
+        medicalHistoryRepository.save(medicalHistory);
 
         RegisterSession sessionData = new RegisterSession(
                 registerPatient.startTime(),

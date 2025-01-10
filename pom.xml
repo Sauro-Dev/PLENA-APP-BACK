@@ -119,6 +119,11 @@
 			<version>2.14.2</version>  <!-- Asegúrate de usar una versión compatible -->
 		</dependency>
 
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.15.1</version>
+		</dependency>
 
 	</dependencies>
 
