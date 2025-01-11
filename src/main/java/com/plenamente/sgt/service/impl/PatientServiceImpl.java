@@ -195,13 +195,30 @@ public class PatientServiceImpl implements PatientService {
             throw new IllegalStateException("No hay sesiones asociadas al paciente para calcular el estado del plan.");
         }
 
-        LocalDate startDate = sessions.stream()
+        // Filtrar las sesiones que pertenecen al nuevo plan
+        List<Session> newPlanSessions = sessions.stream()
+                .filter(session -> session.getPlan().getIdPlan().equals(plan.getIdPlan()))
+                .toList();
+
+        if (newPlanSessions.isEmpty()) {
+            throw new IllegalStateException("No hay sesiones asociadas al nuevo plan del paciente.");
+        }
+
+        // Calcular la fecha de inicio y la fecha de finalización correctamente
+        LocalDate startDate = newPlanSessions.stream()
                 .map(Session::getSessionDate)
                 .min(LocalDate::compareTo)
-                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de inicio del plan."));
+                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de inicio del nuevo plan."));
 
-        LocalDate endDate = startDate.plusWeeks(plan.getWeeks() - 1);
+        LocalDate endDate = newPlanSessions.stream()
+                .map(Session::getSessionDate)
+                .max(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de finalización del nuevo plan."));
+
         LocalDate today = LocalDate.now();
+        System.out.println("startDate: " + startDate);
+        System.out.println("endDate: " + endDate);
+        System.out.println("today: " + today);
 
         if (today.isBefore(startDate)) {
             patient.setPlanStatus(PlanStatus.EN_ESPERA);
@@ -209,7 +226,7 @@ public class PatientServiceImpl implements PatientService {
             updatePatientStatusToInactive(patient);
             patient.setPlanStatus(PlanStatus.COMPLETADO);
         } else {
-            long completedSessions = sessions.stream().filter(this::isSessionValid).count();
+            long completedSessions = newPlanSessions.stream().filter(this::isSessionValid).count();
             int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
 
             if (completedSessions >= totalSessions) {
@@ -243,7 +260,6 @@ public class PatientServiceImpl implements PatientService {
         return startDate.plusWeeks(weeks - 1);
     }
 
-
     private boolean isSessionValid(Session session) {
         boolean therapistPresent = session.isTherapistPresent();
         boolean patientCondition = session.isPatientPresent() || session.getReason() == null;
@@ -252,7 +268,6 @@ public class PatientServiceImpl implements PatientService {
 
         return therapistPresent && patientCondition && sessionFinished;
     }
-
 
     @Override
     public boolean isDNITaken(String dni) {
