@@ -1,9 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
-import com.plenamente.sgt.domain.dto.SessionDto.ListSession;
-import com.plenamente.sgt.domain.dto.SessionDto.MarkPresenceSession;
-import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
-import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
+import com.plenamente.sgt.domain.dto.SessionDto.*;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
@@ -84,12 +81,19 @@ public class SessionController {
         }
     }
 
-    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
-    @PutMapping("/presence/{id}")
-    public ResponseEntity<Session> markPresence(@PathVariable("id") Long sessionId,
-                                                @RequestBody MarkPresenceSession dto) {
-        dto = new MarkPresenceSession(sessionId, dto.therapistPresent(), dto.patientPresent());
-        Session updatedSession = sessionService.markPresence(dto);
+    @PutMapping("/presence/patient/{id}")
+    public ResponseEntity<Session> markPatientPresence(@PathVariable("id") Long sessionId,
+                                                       @RequestBody MarkPatientPresenceSession dto) {
+        dto = new MarkPatientPresenceSession(sessionId, dto.patientPresent());
+        Session updatedSession = sessionService.markPatientPresence(dto);
+        return ResponseEntity.ok(updatedSession);
+    }
+
+    @PutMapping("/presence/therapist/{id}")
+    public ResponseEntity<Session> markTherapistPresence(@PathVariable("id") Long sessionId,
+                                                         @RequestBody MarkTherapistPresenceSession dto) {
+        dto = new MarkTherapistPresenceSession(sessionId, dto.therapistPresent());
+        Session updatedSession = sessionService.markTherapistPresence(dto);
         return ResponseEntity.ok(updatedSession);
     }
 

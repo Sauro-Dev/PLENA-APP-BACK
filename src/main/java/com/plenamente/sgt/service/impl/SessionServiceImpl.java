@@ -1,9 +1,6 @@
 package com.plenamente.sgt.service.impl;
 
-import com.plenamente.sgt.domain.dto.SessionDto.ListSession;
-import com.plenamente.sgt.domain.dto.SessionDto.MarkPresenceSession;
-import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
-import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
+import com.plenamente.sgt.domain.dto.SessionDto.*;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
 import com.plenamente.sgt.domain.entity.*;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
@@ -130,6 +127,7 @@ public class SessionServiceImpl implements SessionService {
             session.setRoom(room);
             session.setTherapistPresent(false);
             session.setPatientPresent(false);
+            session.setRenewPlan(dto.renewPlan()); // Establecer renewPlan
 
             if (firstCreatedSession == null) {
                 firstCreatedSession = sessionRepository.save(session);
@@ -278,6 +276,14 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findByIdSession(dto.idSession())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada."));
 
+        if (isNotWorkingDay(dto.sessionDate())) {
+            throw new IllegalArgumentException("La fecha proporcionada es un día no laborable (domingo).");
+        }
+
+        if (isInvalidTime(dto.startTime())) {
+            throw new IllegalArgumentException("El horario proporcionado está fuera de las horas laborales permitidas.");
+        }
+
         validateTherapistAndRoomAvailabilityUpdate(dto.therapistId(), dto.roomId(), dto.sessionDate(), dto.startTime(), dto.startTime().plusMinutes(50), dto.idSession());
 
         session.setSessionDate(dto.sessionDate());
@@ -290,6 +296,8 @@ public class SessionServiceImpl implements SessionService {
                 .orElseThrow(() -> new EntityNotFoundException("Sala no encontrada.")));
         session.setReason(dto.reason());
         session.setRescheduled(true);
+        session.setTherapistPresent(false);
+        session.setPatientPresent(false);
 
         return sessionRepository.save(session);
     }
@@ -307,19 +315,28 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public Session markPresence(MarkPresenceSession dto) {
+    public Session markPatientPresence(MarkPatientPresenceSession dto) {
         Session session = sessionRepository.findByIdSession(dto.sessionId())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
 
-        boolean noChange = (session.isTherapistPresent() == dto.therapistPresent() &&
-                session.isPatientPresent() == dto.patientPresent());
-        if (noChange) {
-            throw new IllegalArgumentException("No hay cambios en los datos de presencia.");
+        if (session.isPatientPresent() == dto.patientPresent()) {
+            throw new IllegalArgumentException("No hay cambios en la asistencia del paciente.");
+        }
+
+        session.setPatientPresent(dto.patientPresent());
+        return sessionRepository.save(session);
+    }
+
+    @Override
+    public Session markTherapistPresence(MarkTherapistPresenceSession dto) {
+        Session session = sessionRepository.findByIdSession(dto.sessionId())
+                .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
+
+        if (session.isTherapistPresent() == dto.therapistPresent()) {
+            throw new IllegalArgumentException("No hay cambios en la asistencia del terapeuta.");
         }
 
         session.setTherapistPresent(dto.therapistPresent());
-        session.setPatientPresent(dto.patientPresent());
-
         return sessionRepository.save(session);
     }
 

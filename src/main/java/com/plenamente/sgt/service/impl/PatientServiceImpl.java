@@ -1,16 +1,16 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.PatientDto.RegisterPatient;
+import com.plenamente.sgt.domain.dto.PatientDto.RenewPlanDto;
 import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
-import com.plenamente.sgt.domain.entity.Patient;
-import com.plenamente.sgt.domain.entity.Plan;
-import com.plenamente.sgt.domain.entity.Tutor;
+import com.plenamente.sgt.domain.entity.*;
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
+import com.plenamente.sgt.infra.repository.SessionRepository;
 import com.plenamente.sgt.service.PatientService;
 import com.plenamente.sgt.service.SessionService;
 import jakarta.transaction.Transactional;
@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,9 +30,8 @@ public class PatientServiceImpl implements PatientService {
     private final PatientRepository patientRepository;
     private final PlanRepository planRepository;
     private final SessionService sessionService;
+    private final SessionRepository sessionRepository;
 
-    @Transactional
-    @Override
     public Patient createPatient(RegisterPatient registerPatient) {
         if (patientRepository.existsByDni(registerPatient.dni())) {
             throw new IllegalArgumentException("El DNI ya está registrado en el sistema.");
@@ -58,6 +58,13 @@ public class PatientServiceImpl implements PatientService {
 
         patient.setTutors(tutors);
 
+        LocalDate firstSessionDate = registerPatient.firstWeekDates()
+                .stream()
+                .min(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se encontraron fechas para las sesiones iniciales."));
+
+        setInitialPlanStatus(patient, firstSessionDate);
+
         Patient savedPatient = patientRepository.save(patient);
 
         RegisterSession sessionData = new RegisterSession(
@@ -65,7 +72,8 @@ public class PatientServiceImpl implements PatientService {
                 savedPatient.getIdPatient(),
                 registerPatient.therapistId(),
                 registerPatient.roomId(),
-                registerPatient.firstWeekDates()
+                registerPatient.firstWeekDates(),
+                0 // Inicializar renewPlan en 0 para la primera creación
         );
 
         sessionService.createSession(sessionData);
@@ -76,10 +84,22 @@ public class PatientServiceImpl implements PatientService {
     @Override
     public List<ListPatient> getAllPatients() {
         List<Patient> patients = patientRepository.findAll();
-        int patientCount = patients.size();
-        System.out.println("Total de pacientes: " + patientCount);
 
-        return patients.stream().map(this::mapToListPatient).collect(Collectors.toList());
+        patients.forEach(patient -> {
+            try {
+                calculatePlanStatus(patient);
+            } catch (Exception e) {
+                throw new IllegalStateException("Error al calcular el estado del plan para el paciente: " +
+                        patient.getName(), e);
+            }
+        });
+
+        patients = patients.stream().distinct().toList();
+        patientRepository.saveAll(patients);
+
+        return patients.stream()
+                .map(this::mapToListPatient)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -87,6 +107,10 @@ public class PatientServiceImpl implements PatientService {
         Patient patient = patientRepository.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Paciente no encontrado.")
         );
+
+        calculatePlanStatus(patient);
+        patientRepository.save(patient);
+
         return mapToListPatient(patient);
     }
 
@@ -126,6 +150,124 @@ public class PatientServiceImpl implements PatientService {
         }
 
         return patientRepository.save(existingPatient);
+    }
+
+    @Transactional
+    @Override
+    public Patient renewPlan(RenewPlanDto renewPlanDto) {
+        Patient patient = patientRepository.findById(renewPlanDto.patientId())
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado."));
+
+        if (patient.isStatus()) {
+            throw new IllegalStateException("El paciente ya está activo. No es posible renovar el plan.");
+        }
+
+        if (!PlanStatus.COMPLETADO.equals(patient.getPlanStatus())) {
+            throw new IllegalStateException("El plan actual del paciente no está completado. No se puede renovar.");
+        }
+
+        Plan newPlan = planRepository.findById(renewPlanDto.newPlanId())
+                .orElseThrow(() -> new ResourceNotFoundException("Plan no encontrado."));
+
+        patient.setIdPlan(newPlan);
+        patient.setStatus(true);
+
+        int maxRenewPlan = sessionRepository.findMaxRenewPlanByPatientId(patient.getIdPatient()).orElse(0);
+
+        RegisterSession sessionData = new RegisterSession(
+                renewPlanDto.startTime(),
+                renewPlanDto.patientId(),
+                renewPlanDto.therapistId(),
+                renewPlanDto.roomId(),
+                renewPlanDto.firstWeekDates(),
+                maxRenewPlan + 1 // Incrementar renewPlan
+        );
+        sessionService.createSession(sessionData);
+
+        calculatePlanStatus(patient);
+
+        return patientRepository.save(patient);
+    }
+
+    private void calculatePlanStatus(Patient patient) {
+        Plan plan = patient.getIdPlan();
+        List<Session> sessions = sessionRepository.findByPatient_IdPatient(patient.getIdPatient());
+
+        if (sessions.isEmpty()) {
+            throw new IllegalStateException("No hay sesiones asociadas al paciente para calcular el estado del plan.");
+        }
+
+        int maxRenewPlan = sessions.stream()
+                .mapToInt(Session::getRenewPlan)
+                .max()
+                .orElse(0);
+
+        List<Session> newPlanSessions = sessions.stream()
+                .filter(session -> session.getPlan().getIdPlan().equals(plan.getIdPlan()) && session.getRenewPlan() == maxRenewPlan)
+                .toList();
+
+        if (newPlanSessions.isEmpty()) {
+            throw new IllegalStateException("No hay sesiones asociadas al nuevo plan del paciente.");
+        }
+
+        LocalDate startDate = newPlanSessions.stream()
+                .map(Session::getSessionDate)
+                .min(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de inicio del nuevo plan."));
+
+        LocalDate endDate = newPlanSessions.stream()
+                .map(Session::getSessionDate)
+                .max(LocalDate::compareTo)
+                .orElseThrow(() -> new IllegalStateException("No se pudo calcular la fecha de finalización del nuevo plan."));
+
+        LocalDate today = LocalDate.now();
+        System.out.println("startDate: " + startDate);
+        System.out.println("endDate: " + endDate);
+        System.out.println("today: " + today);
+
+        if (today.isBefore(startDate)) {
+            patient.setPlanStatus(PlanStatus.EN_ESPERA);
+        } else if (today.isAfter(endDate)) {
+            updatePatientStatusToInactive(patient);
+            patient.setPlanStatus(PlanStatus.COMPLETADO);
+        } else {
+            long completedSessions = newPlanSessions.stream().filter(this::isSessionValid).count();
+            int totalSessions = plan.getWeeks() * plan.getNumOfSessions();
+
+            if (completedSessions >= totalSessions) {
+                updatePatientStatusToInactive(patient);
+                patient.setPlanStatus(PlanStatus.COMPLETADO);
+            } else {
+                patient.setPlanStatus(PlanStatus.EN_CURSO);
+            }
+        }
+
+        patientRepository.save(patient);
+    }
+
+    private void setInitialPlanStatus(Patient patient, LocalDate firstSessionDate) {
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(firstSessionDate)) {
+            patient.setPlanStatus(PlanStatus.EN_ESPERA);
+        } else {
+            patient.setPlanStatus(PlanStatus.EN_CURSO);
+        }
+    }
+
+    private void updatePatientStatusToInactive(Patient patient) {
+        if (patient.isStatus()) {
+            patient.setStatus(false);
+            patientRepository.save(patient);
+        }
+    }
+
+    private boolean isSessionValid(Session session) {
+        boolean therapistPresent = session.isTherapistPresent();
+        boolean patientCondition = session.isPatientPresent() || session.getReason() == null;
+        boolean sessionFinished = session.getEndTime().isBefore(LocalTime.now())
+                && session.getSessionDate().isBefore(LocalDate.now());
+
+        return therapistPresent && patientCondition && sessionFinished;
     }
 
     @Override
@@ -171,6 +313,10 @@ public class PatientServiceImpl implements PatientService {
     }
 
     private ListPatient mapToListPatient(Patient patient) {
+        if (PlanStatus.COMPLETADO.equals(patient.getPlanStatus()) && patient.isStatus()) {
+            updatePatientStatusToInactive(patient);
+        }
+
         return new ListPatient(
                 patient.getIdPatient(),
                 patient.getName(),
@@ -184,7 +330,8 @@ public class PatientServiceImpl implements PatientService {
                         .map(tutor -> new TutorDTO(tutor.getFullName(), tutor.getDni(), tutor.getPhone()))
                         .collect(Collectors.toList()),
                 patient.getPresumptiveDiagnosis(),
-                patient.isStatus()
+                patient.isStatus(),
+                patient.getPlanStatus().name()
         );
     }
 }
