@@ -25,6 +25,8 @@ public class Session {
     private boolean rescheduled = false;
     private boolean therapistPresent;
     private boolean patientPresent;
+    private int renewPlan;
+
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)

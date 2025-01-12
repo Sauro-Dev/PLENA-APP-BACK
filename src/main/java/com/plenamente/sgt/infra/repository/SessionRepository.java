@@ -3,6 +3,7 @@ package com.plenamente.sgt.infra.repository;
 import com.plenamente.sgt.domain.entity.Session;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -37,4 +38,6 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     List<Session> findByPatient_IdPatient(Long idPatient);
 
+    @Query("SELECT MAX(s.renewPlan) FROM Session s WHERE s.patient.idPatient = :patientId")
+    Optional<Integer> findMaxRenewPlanByPatientId(Long patientId);
 }

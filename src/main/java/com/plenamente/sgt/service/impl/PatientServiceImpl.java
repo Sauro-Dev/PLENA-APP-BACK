@@ -32,8 +32,6 @@ public class PatientServiceImpl implements PatientService {
     private final SessionService sessionService;
     private final SessionRepository sessionRepository;
 
-    @Transactional
-    @Override
     public Patient createPatient(RegisterPatient registerPatient) {
         if (patientRepository.existsByDni(registerPatient.dni())) {
             throw new IllegalArgumentException("El DNI ya está registrado en el sistema.");
@@ -74,7 +72,8 @@ public class PatientServiceImpl implements PatientService {
                 savedPatient.getIdPatient(),
                 registerPatient.therapistId(),
                 registerPatient.roomId(),
-                registerPatient.firstWeekDates()
+                registerPatient.firstWeekDates(),
+                0 // Inicializar renewPlan en 0 para la primera creación
         );
 
         sessionService.createSession(sessionData);
@@ -173,12 +172,15 @@ public class PatientServiceImpl implements PatientService {
         patient.setIdPlan(newPlan);
         patient.setStatus(true);
 
+        int maxRenewPlan = sessionRepository.findMaxRenewPlanByPatientId(patient.getIdPatient()).orElse(0);
+
         RegisterSession sessionData = new RegisterSession(
                 renewPlanDto.startTime(),
                 renewPlanDto.patientId(),
                 renewPlanDto.therapistId(),
                 renewPlanDto.roomId(),
-                renewPlanDto.firstWeekDates()
+                renewPlanDto.firstWeekDates(),
+                maxRenewPlan + 1 // Incrementar renewPlan
         );
         sessionService.createSession(sessionData);
 
@@ -195,16 +197,19 @@ public class PatientServiceImpl implements PatientService {
             throw new IllegalStateException("No hay sesiones asociadas al paciente para calcular el estado del plan.");
         }
 
-        // Filtrar las sesiones que pertenecen al nuevo plan
+        int maxRenewPlan = sessions.stream()
+                .mapToInt(Session::getRenewPlan)
+                .max()
+                .orElse(0);
+
         List<Session> newPlanSessions = sessions.stream()
-                .filter(session -> session.getPlan().getIdPlan().equals(plan.getIdPlan()))
+                .filter(session -> session.getPlan().getIdPlan().equals(plan.getIdPlan()) && session.getRenewPlan() == maxRenewPlan)
                 .toList();
 
         if (newPlanSessions.isEmpty()) {
             throw new IllegalStateException("No hay sesiones asociadas al nuevo plan del paciente.");
         }
 
-        // Calcular la fecha de inicio y la fecha de finalización correctamente
         LocalDate startDate = newPlanSessions.stream()
                 .map(Session::getSessionDate)
                 .min(LocalDate::compareTo)

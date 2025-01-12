@@ -127,6 +127,7 @@ public class SessionServiceImpl implements SessionService {
             session.setRoom(room);
             session.setTherapistPresent(false);
             session.setPatientPresent(false);
+            session.setRenewPlan(dto.renewPlan()); // Establecer renewPlan
 
             if (firstCreatedSession == null) {
                 firstCreatedSession = sessionRepository.save(session);
