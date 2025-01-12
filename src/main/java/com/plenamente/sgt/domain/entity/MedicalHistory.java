@@ -18,7 +18,8 @@ public class MedicalHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idMedicalHistory;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne
+    @MapsId
     @JoinColumn(name = "id_patient", nullable = false)
     private Patient patient;
 

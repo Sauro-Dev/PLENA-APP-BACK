@@ -13,4 +13,5 @@ import lombok.*;
 public class Secretary extends User {
     @Column(nullable = false)
     private Double paymentMonthly;
+
 }

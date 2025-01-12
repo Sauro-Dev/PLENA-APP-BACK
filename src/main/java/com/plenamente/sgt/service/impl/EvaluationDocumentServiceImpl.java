@@ -13,6 +13,10 @@ import com.plenamente.sgt.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +30,7 @@ import java.util.stream.Collectors;
 @Transactional
 @Slf4j
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "evaluation_documents")
 public class EvaluationDocumentServiceImpl implements EvaluationDocumentService {
 
     private final EvaluationDocumentRepository documentRepository;
@@ -34,6 +39,7 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
     private final StorageService storageService;
     private final PatientRepository patientRepository;
 
+    @CachePut(key = "#result.idDocument")
     @Override
     public EvaluationDocumentDto uploadDocument(Long patientId, Long medicalHistoryId, MultipartFile file, EvaluationDocumentDto dto) {
         Patient patient = patientRepository.findById(patientId)
@@ -68,6 +74,7 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
         return mapToDto(document);
     }
 
+    @Cacheable(key = "#documentId")
     @Override
     @Transactional(readOnly = true)
     public EvaluationDocumentDto getDocument(Long documentId) {
@@ -76,6 +83,7 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
     }
 
+    @CacheEvict(key = "#documentId")
     @Override
     public void deleteDocument(Long documentId) {
         EvaluationDocument document = documentRepository.findById(documentId)
@@ -92,6 +100,7 @@ public class EvaluationDocumentServiceImpl implements EvaluationDocumentService 
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(key = "'medical_history_' + #medicalHistoryId")
     public List<EvaluationDocumentDto> getDocumentsByMedicalHistory(Long medicalHistoryId) {
         return documentRepository.findByMedicalHistoryIdMedicalHistory(medicalHistoryId)
                 .stream()

@@ -9,7 +9,10 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
 
 @Configuration
 public class RedisConfig {
@@ -41,7 +44,7 @@ public class RedisConfig {
         LoggingRedisSerializer serializer = new LoggingRedisSerializer(objectMapper);
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                //.entryTtl(Duration.ofMinutes(30)) // para que no se cachee por mucho tiempo
+                .entryTtl(Duration.ofHours(30))
                 .disableCachingNullValues()
                 .serializeKeysWith(
                         org.springframework.data.redis.serializer.RedisSerializationContext
@@ -56,6 +59,20 @@ public class RedisConfig {
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
+                .withCacheConfiguration("evaluation_documents",
+                        RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.ofHours(24))
+                                .disableCachingNullValues()
+                                .serializeKeysWith(
+                                        RedisSerializationContext
+                                                .SerializationPair
+                                                .fromSerializer(new StringRedisSerializer())
+                                )
+                                .serializeValuesWith(
+                                        RedisSerializationContext
+                                                .SerializationPair
+                                                .fromSerializer(serializer)
+                                ))
                 .build();
     }
 }

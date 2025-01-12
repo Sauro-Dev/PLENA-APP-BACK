@@ -17,9 +17,8 @@ import java.util.List;
 @Slf4j
 public class EvaluationDocumentController {
     private final EvaluationDocumentService documentService;
-    private final EvaluationDocumentService evaluationDocumentService;
 
-    @PostMapping("/medical-history/{medicalHistoryId}/upload")
+    @PostMapping("/patient/{patientId}/medical-history/{medicalHistoryId}/upload")
     public ResponseEntity<EvaluationDocumentDto> uploadDocument(
             @PathVariable Long patientId,
             @PathVariable Long medicalHistoryId,
@@ -34,7 +33,7 @@ public class EvaluationDocumentController {
         dto.setEvaluationType(evaluationType);
         dto.setEvaluationDate(LocalDateTime.now());
 
-        return ResponseEntity.ok(evaluationDocumentService.uploadDocument(patientId, medicalHistoryId, file, dto));
+        return ResponseEntity.ok(documentService.uploadDocument(patientId, medicalHistoryId, file, dto));
     }
 
     @GetMapping("/medical-history/{medicalHistoryId}")
