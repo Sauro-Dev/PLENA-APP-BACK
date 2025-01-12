@@ -35,7 +35,6 @@ public class PatientController {
     }
 
     // Endpoint para listar todos los pacientes
-    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/all")
     public ResponseEntity<List<ListPatient>> getAllPatients() {
         List<ListPatient> patients = patientService.getAllPatients();
