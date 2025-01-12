@@ -261,10 +261,6 @@ public class PatientServiceImpl implements PatientService {
         }
     }
 
-    private LocalDate calculatePlanEndDate(LocalDate startDate, int weeks) {
-        return startDate.plusWeeks(weeks - 1);
-    }
-
     private boolean isSessionValid(Session session) {
         boolean therapistPresent = session.isTherapistPresent();
         boolean patientCondition = session.isPatientPresent() || session.getReason() == null;
