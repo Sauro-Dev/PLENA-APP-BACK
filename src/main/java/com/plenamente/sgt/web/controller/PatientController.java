@@ -1,10 +1,12 @@
 package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.PatientDto.RegisterPatient;
+import com.plenamente.sgt.domain.dto.PatientDto.RenewPlanDto;
 import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.service.PatientService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,11 +35,19 @@ public class PatientController {
     }
 
     // Endpoint para listar todos los pacientes
-    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/all")
     public ResponseEntity<List<ListPatient>> getAllPatients() {
         List<ListPatient> patients = patientService.getAllPatients();
         return ResponseEntity.ok(patients);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
+    @PostMapping("/patients/renew-plan")
+    public ResponseEntity<ListPatient> renewPlan(@Valid @RequestBody RenewPlanDto renewPlanDto) {
+
+        patientService.renewPlan(renewPlanDto);
+        ListPatient updatedPatient = patientService.getPatientById(renewPlanDto.patientId());
+        return ResponseEntity.ok(updatedPatient);
     }
 
     // Endpoint para obtener un paciente por ID
