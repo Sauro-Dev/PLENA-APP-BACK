@@ -36,7 +36,7 @@ public class SessionController {
         return ResponseEntity.ok(sessions);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Session> updateSession(@PathVariable("id") Long idSession,
                                                  @RequestBody UpdateSession dto) {
@@ -97,8 +97,6 @@ public class SessionController {
         return ResponseEntity.ok(updatedSession);
     }
 
-
-    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @GetMapping("/available-therapists")
     public ResponseEntity<List<ListTherapist>> getAvailableTherapists(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sessionDate,
@@ -109,7 +107,6 @@ public class SessionController {
         return ResponseEntity.ok(availableTherapists);
     }
 
-    @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @GetMapping("/available-rooms")
     public ResponseEntity<List<Room>> getAvailableRooms(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate sessionDate,

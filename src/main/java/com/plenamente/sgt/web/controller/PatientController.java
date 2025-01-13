@@ -51,7 +51,6 @@ public class PatientController {
     }
 
     // Endpoint para obtener un paciente por ID
-    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/select/{id}")
     public ResponseEntity<ListPatient> getPatientById(@PathVariable Long id) {
         ListPatient patient = patientService.getPatientById(id);

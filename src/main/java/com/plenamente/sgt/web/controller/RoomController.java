@@ -40,14 +40,12 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/{roomId}/materials")
     public ResponseEntity<List<Material>> getMaterialsByRoom(@PathVariable Long roomId) {
         List<Material> materials = roomService.getMaterialsByRoom(roomId);
         return ResponseEntity.ok(materials);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/{roomId}")
     public ResponseEntity<Room> getRoomById(@PathVariable Long roomId) {
         Room room = roomService.getRoomById(roomId);
@@ -79,7 +77,6 @@ public class RoomController {
         return ResponseEntity.ok("Sala con ID " + roomId + " deshabilitada correctamente.");
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/disabled")
     public ResponseEntity<List<DisabledRoom>> getDisabledRooms() {
         List<DisabledRoom> disabledRooms = roomService.getDisabledRooms();

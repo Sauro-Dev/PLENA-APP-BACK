@@ -59,7 +59,6 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<ListUser>> getAllUsers() {
         authorizationService.authorizeRegisterUser();

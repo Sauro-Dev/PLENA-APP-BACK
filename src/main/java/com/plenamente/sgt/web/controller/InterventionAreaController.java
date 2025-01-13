@@ -27,7 +27,6 @@ public class InterventionAreaController {
         return new ResponseEntity<>(interventionArea, HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<ListInterventionArea>> getAllInterventionAreas() {
         List<ListInterventionArea> areas = interventionAreaService.getAllInterventionAreas();
@@ -52,7 +51,6 @@ public class InterventionAreaController {
         return ResponseEntity.ok(updatedArea);
     }
 
-    @PreAuthorize("hasAnyRole('THERAPIST', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<reportInterventionArea> getInterventionArea(@PathVariable Long id) {
         InterventionArea interventionArea = interventionAreaService.getInterventionArea(id);
@@ -86,7 +84,6 @@ public class InterventionAreaController {
         return ResponseEntity.ok("Área de intervención con ID " + id + " deshabilitada correctamente.");
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/disabled")
     public ResponseEntity<List<DisabledInterventionArea>> getDisabledInterventionAreas() {
         List<DisabledInterventionArea> disabledAreas = interventionAreaService.getDisabledInterventionAreas();

@@ -26,14 +26,12 @@ public class MaterialController {
         return new ResponseEntity<>(newMaterial, HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'THERAPIST')")
     @GetMapping("/all")
     public ResponseEntity<List<RegisterMaterial>> getAllMaterials() {
         List<RegisterMaterial> materials = materialService.getAllMaterials();
         return new ResponseEntity<>(materials, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/select/{id}")
     public ResponseEntity<ListMaterial> getMaterialById(@PathVariable String id) {
         ListMaterial material = materialService.getMaterialById(id);
