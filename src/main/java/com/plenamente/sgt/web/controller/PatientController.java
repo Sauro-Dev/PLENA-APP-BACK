@@ -42,7 +42,7 @@ public class PatientController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
-    @PostMapping("/patients/renew-plan")
+    @PostMapping("/renew-plan")
     public ResponseEntity<ListPatient> renewPlan(@Valid @RequestBody RenewPlanDto renewPlanDto) {
 
         patientService.renewPlan(renewPlanDto);
