@@ -30,14 +30,12 @@ public class SessionServiceImpl implements SessionService {
     public List<ListSession> getFilteredSessions(LocalDate date, Long therapistId, Long roomId) {
         List<Session> sessions;
 
-        // Si no hay fecha, obtener las sesiones desde hoy en adelante
         if (date != null) {
             sessions = sessionRepository.findBySessionDate(date);
         } else {
             sessions = sessionRepository.findBySessionDateGreaterThanEqual(LocalDate.now());
         }
 
-        // Aplicar filtros adicionales
         Stream<Session> sessionStream = sessions.stream();
 
         if (therapistId != null && !therapistId.toString().isEmpty()) {
@@ -48,23 +46,7 @@ public class SessionServiceImpl implements SessionService {
             sessionStream = sessionStream.filter(s -> s.getRoom().getIdRoom().equals(roomId));
         }
 
-        return sessionStream
-                .map(session -> new ListSession(
-                        session.getIdSession(),
-                        session.getTherapist().getIdUser(),
-                        session.getRoom().getIdRoom(),
-                        session.getSessionDate(),
-                        formatTime12Hour(session.getStartTime()),
-                        formatTime12Hour(session.getEndTime()),
-                        session.getPatient().getName(),
-                        session.getTherapist().getName(),
-                        session.getRoom().getName(),
-                        session.isRescheduled(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getReason()
-                ))
-                .collect(Collectors.toList());
+        return sessionStream.map(this::mapToListSession).collect(Collectors.toList());
     }
 
     @Override
@@ -127,7 +109,7 @@ public class SessionServiceImpl implements SessionService {
             session.setRoom(room);
             session.setTherapistPresent(false);
             session.setPatientPresent(false);
-            session.setRenewPlan(dto.renewPlan()); // Establecer renewPlan
+            session.setRenewPlan(dto.renewPlan());
 
             if (firstCreatedSession == null) {
                 firstCreatedSession = sessionRepository.save(session);
@@ -174,21 +156,7 @@ public class SessionServiceImpl implements SessionService {
 
         return sessionRepository.findByTherapist_IdUser(therapistId)
                 .stream()
-                .map(session -> new ListSession(
-                        session.getIdSession(),
-                        session.getTherapist().getIdUser(),
-                        session.getRoom().getIdRoom(),
-                        session.getSessionDate(),
-                        formatTime12Hour(session.getStartTime()),
-                        formatTime12Hour(session.getEndTime()),
-                        session.getPatient().getName(),
-                        session.getTherapist().getName(),
-                        session.getRoom().getName(),
-                        session.isRescheduled(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getReason()
-                ))
+                .map(this::mapToListSession)
                 .collect(Collectors.toList());
     }
 
@@ -202,42 +170,14 @@ public class SessionServiceImpl implements SessionService {
         }
 
         return sessions.stream()
-                .map(session -> new ListSession(
-                        session.getIdSession(),
-                        session.getTherapist().getIdUser(),
-                        session.getRoom().getIdRoom(),
-                        session.getSessionDate(),
-                        formatTime12Hour(session.getStartTime()),
-                        formatTime12Hour(session.getEndTime()),
-                        session.getPatient().getName(),
-                        session.getTherapist().getName(),
-                        session.getRoom().getName(),
-                        session.isRescheduled(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getReason()
-                ))
+                .map(this::mapToListSession)
                 .collect(Collectors.toList());
     }
 
     public List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate) {
         List<Session> sessions = sessionRepository.findBySessionDateBetween(startDate, endDate);
         return sessions.stream()
-                .map(session -> new ListSession(
-                        session.getIdSession(),
-                        session.getTherapist().getIdUser(),
-                        session.getRoom().getIdRoom(),
-                        session.getSessionDate(),
-                        formatTime12Hour(session.getStartTime()),
-                        formatTime12Hour(session.getEndTime()),
-                        session.getPatient().getName(),
-                        session.getTherapist().getName(),
-                        session.getRoom().getName(),
-                        session.isRescheduled(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getReason()
-                ))
+                .map(this::mapToListSession)
                 .collect(Collectors.toList());
     }
 
@@ -253,22 +193,26 @@ public class SessionServiceImpl implements SessionService {
         }
 
         return sessions.stream()
-                .map(session -> new ListSession(
-                        session.getIdSession(),
-                        session.getTherapist().getIdUser(),
-                        session.getRoom().getIdRoom(),
-                        session.getSessionDate(),
-                        formatTime12Hour(session.getStartTime()),
-                        formatTime12Hour(session.getEndTime()),
-                        session.getPatient().getName(),
-                        session.getTherapist().getName(),
-                        session.getRoom().getName(),
-                        session.isRescheduled(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getReason()
-                ))
+                .map(this::mapToListSession)
                 .collect(Collectors.toList());
+    }
+
+    private ListSession mapToListSession(Session session) {
+        return new ListSession(
+                session.getIdSession(),
+                session.getTherapist().getIdUser(),
+                session.getRoom().getIdRoom(),
+                session.getSessionDate(),
+                formatTime12Hour(session.getStartTime()),
+                formatTime12Hour(session.getEndTime()),
+                session.getPatient().getName(),
+                session.getTherapist().getName(),
+                session.getRoom().getName(),
+                session.isRescheduled(),
+                session.isTherapistPresent(),
+                session.isPatientPresent(),
+                session.getReason()
+        );
     }
 
     @Override
@@ -368,6 +312,122 @@ public class SessionServiceImpl implements SessionService {
         return allRooms.stream()
                 .filter(room -> !occupiedRooms.contains(room))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportSession> getAllSessionsReport() {
+        return sessionRepository.findAll()
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                )).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportSession> getSessionsReportByTherapist(Long therapistId) {
+        userRepository.findById(therapistId)
+                .filter(User::isTherapist)
+                .orElseThrow(() -> new ResourceNotFoundException("Terapeuta no encontrado"));
+
+        return sessionRepository.findByTherapist_IdUser(therapistId)
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                )).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportSession> getSessionsReportByPatient(Long patientId) {
+        patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
+
+        return sessionRepository.findByPatient_IdPatient(patientId)
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                )).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AttendanceReport> getAttendanceReportByTherapist(Long therapistId) {
+        userRepository.findById(therapistId)
+                .filter(User::isTherapist)
+                .orElseThrow(() -> new ResourceNotFoundException("Terapeuta no encontrado"));
+
+        return sessionRepository.findByTherapist_IdUser(therapistId)
+                .stream()
+                .map(session -> new AttendanceReport(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.isTherapistPresent()
+                )).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AttendanceReport> getAttendanceReportByPatient(Long patientId) {
+        patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
+
+        return sessionRepository.findByPatient_IdPatient(patientId)
+                .stream()
+                .map(session -> new AttendanceReport(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.isPatientPresent()
+                )).collect(Collectors.toList());
     }
 
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {

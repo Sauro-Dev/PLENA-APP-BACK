@@ -11,24 +11,19 @@ import java.util.List;
 
 public interface SessionService {
     Session createSession(RegisterSession dto);
-
     Session updateSession(UpdateSession dto);
-
     List<ListSession> getSessionsByDate(LocalDate date);
-
     List<ListSession> getSessionsByTherapist(Long therapistId);
-
     Session markPatientPresence(MarkPatientPresenceSession dto);
-
     Session markTherapistPresence(MarkTherapistPresenceSession dto);
-
     List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime);
-
     List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
-
     List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime);
-
     List<ListSession> getSessionsByRoom(Long roomId);
-
     List<ListSession> getFilteredSessions(LocalDate date, Long therapistId, Long roomId);
+    List<ReportSession> getAllSessionsReport();
+    List<ReportSession> getSessionsReportByTherapist(Long therapistId);
+    List<ReportSession> getSessionsReportByPatient(Long patientId);
+    List<AttendanceReport> getAttendanceReportByTherapist(Long therapistId);
+    List<AttendanceReport> getAttendanceReportByPatient(Long patientId);
 }
