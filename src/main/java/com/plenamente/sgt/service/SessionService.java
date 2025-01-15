@@ -24,4 +24,7 @@ public interface SessionService {
     List<ReportSession> getAllSessionsReport();
     List<ReportSession> getSessionsReportByTherapist(Long therapistId);
     List<ReportSession> getSessionsReportByPatient(Long patientId);
+    List<ReportSession> getAllSessionsReportByDateRange(LocalDate startDate, LocalDate endDate);
+    List<ReportSession> getSessionsReportByTherapistAndDateRange(Long therapistId, LocalDate startDate, LocalDate endDate);
+    List<ReportSession> getSessionsReportByPatientAndDateRange(Long patientId, LocalDate startDate, LocalDate endDate);
 }

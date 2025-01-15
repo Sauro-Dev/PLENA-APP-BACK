@@ -393,6 +393,88 @@ public class SessionServiceImpl implements SessionService {
                 )).collect(Collectors.toList());
     }
 
+    @Override
+    public List<ReportSession> getAllSessionsReportByDateRange(LocalDate startDate, LocalDate endDate) {
+        return sessionRepository.findBySessionDateBetweenOrderBySessionDateAsc(startDate, endDate)
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportSession> getSessionsReportByTherapistAndDateRange(Long therapistId, LocalDate startDate, LocalDate endDate) {
+        userRepository.findById(therapistId)
+                .filter(User::isTherapist)
+                .orElseThrow(() -> new ResourceNotFoundException("Terapeuta no encontrado"));
+
+        return sessionRepository.findByTherapistIdAndSessionDateBetweenOrderBySessionDateAsc(therapistId, startDate, endDate)
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReportSession> getSessionsReportByPatientAndDateRange(Long patientId, LocalDate startDate, LocalDate endDate) {
+        patientRepository.findById(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
+
+        return sessionRepository.findByPatientIdAndSessionDateBetweenOrderBySessionDateAsc(patientId, startDate, endDate)
+                .stream()
+                .map(session -> new ReportSession(
+                        session.getIdSession(),
+                        session.getSessionDate(),
+                        session.getStartTime(),
+                        session.getEndTime(),
+                        session.isTherapistPresent(),
+                        session.isPatientPresent(),
+                        session.getTherapist().getName(),
+                        session.getPatient().getName(),
+                        session.getRoom().getName(),
+                        session.getRenewPlan(),
+                        session.getReason(),
+                        session.getPatient().getIdPatient(),
+                        session.getPlan().getIdPlan(),
+                        session.getRoom().getIdRoom(),
+                        session.getTherapist().getIdUser(),
+                        session.isRescheduled()
+                ))
+                .collect(Collectors.toList());
+    }
+
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
         return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
                 therapistId, date, startTime, endTime, 0L);

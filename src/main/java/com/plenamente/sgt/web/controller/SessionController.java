@@ -30,6 +30,14 @@ public class SessionController {
     private final SessionService sessionService;
     private final PdfGenerationService pdfGenerationService;
     private final PlanRepository planRepository;
+    private record DateRange(LocalDate startDate, LocalDate endDate) {}
+
+    private DateRange getPreviousMonthRange() {
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfPreviousMonth = today.minusMonths(1).withDayOfMonth(1);
+        LocalDate lastDayOfPreviousMonth = today.withDayOfMonth(1).minusDays(1);
+        return new DateRange(firstDayOfPreviousMonth, lastDayOfPreviousMonth);
+    }
 
     @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @PostMapping("/register")
@@ -138,8 +146,19 @@ public class SessionController {
     }
 
     @GetMapping("/report/all/pdf")
-    public ResponseEntity<byte[]> getAllSessionsReportPdf() {
-        List<ReportSession> reports = sessionService.getAllSessionsReport();
+    public ResponseEntity<byte[]> getAllSessionsReportPdf(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getAllSessionsReportByDateRange(startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getAllSessionsReportByDateRange(
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
 
         Map<Long, Integer> planSessions = reports.stream()
                 .map(ReportSession::planId)
@@ -153,8 +172,16 @@ public class SessionController {
 
         byte[] pdfData = pdfGenerationService.generateAllSessionsReportPdf(reports, planSessions);
 
-        String filename = String.format("reporte_general_sesiones_%s.pdf",
-                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_general_sesiones_%s_%s.pdf",
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_general_sesiones_%s.pdf",
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=" + filename)
@@ -163,8 +190,21 @@ public class SessionController {
     }
 
     @GetMapping("/report/therapist/{id}/pdf")
-    public ResponseEntity<byte[]> getSessionsReportByTherapistPdf(@PathVariable("id") Long therapistId) {
-        List<ReportSession> reports = sessionService.getSessionsReportByTherapist(therapistId);
+    public ResponseEntity<byte[]> getSessionsReportByTherapistPdf(
+            @PathVariable("id") Long therapistId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getSessionsReportByTherapistAndDateRange(therapistId, startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getSessionsReportByTherapistAndDateRange(
+                    therapistId,
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
 
         Map<Long, Integer> planSessions = reports.stream()
                 .map(ReportSession::planId)
@@ -178,9 +218,18 @@ public class SessionController {
 
         byte[] pdfData = pdfGenerationService.generateTherapistReportPdf(reports, planSessions);
 
-        String filename = String.format("reporte_sesiones_terapeuta_%d_%s.pdf",
-                therapistId,
-                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_sesiones_terapeuta_%d_%s_%s.pdf",
+                    therapistId,
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_sesiones_terapeuta_%d_%s.pdf",
+                    therapistId,
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=" + filename)
@@ -189,8 +238,21 @@ public class SessionController {
     }
 
     @GetMapping("/report/patient/{id}/pdf")
-    public ResponseEntity<byte[]> getSessionsReportByPatientPdf(@PathVariable("id") Long patientId) {
-        List<ReportSession> reports = sessionService.getSessionsReportByPatient(patientId);
+    public ResponseEntity<byte[]> getSessionsReportByPatientPdf(
+            @PathVariable("id") Long patientId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getSessionsReportByPatientAndDateRange(patientId, startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getSessionsReportByPatientAndDateRange(
+                    patientId,
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
 
         Map<Long, Integer> planSessions = reports.stream()
                 .map(ReportSession::planId)
@@ -204,9 +266,18 @@ public class SessionController {
 
         byte[] pdfData = pdfGenerationService.generatePatientReportPdf(reports, planSessions);
 
-        String filename = String.format("reporte_sesiones_paciente_%d_%s.pdf",
-                patientId,
-                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_sesiones_paciente_%d_%s_%s.pdf",
+                    patientId,
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_sesiones_paciente_%d_%s.pdf",
+                    patientId,
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=" + filename)
