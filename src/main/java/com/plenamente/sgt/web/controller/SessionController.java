@@ -2,9 +2,11 @@ package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.SessionDto.*;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
+import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
+import com.plenamente.sgt.infra.repository.PlanRepository;
 import com.plenamente.sgt.service.SessionService;
 import com.plenamente.sgt.service.impl.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +17,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/sessions")
@@ -24,6 +29,7 @@ import java.util.List;
 public class SessionController {
     private final SessionService sessionService;
     private final PdfGenerationService pdfGenerationService;
+    private final PlanRepository planRepository;
 
     @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @PostMapping("/register")
@@ -142,35 +148,28 @@ public class SessionController {
                 .body(pdfData);
     }
 
-    @GetMapping("/report/attendance/therapist/{id}/pdf")
-    public ResponseEntity<byte[]> getAttendanceReportByTherapistPdf(@PathVariable("id") Long therapistId) {
-        List<AttendanceReport> reports = sessionService.getAttendanceReportByTherapist(therapistId);
-        byte[] pdfData = pdfGenerationService.generateAttendanceReportPdf(reports);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=reporte_asistencia_terapeuta.pdf")
-                .header("Content-Type", "application/pdf")
-                .body(pdfData);
-    }
-
-    @GetMapping("/report/attendance/patient/{id}/pdf")
-    public ResponseEntity<byte[]> getAttendanceReportByPatientPdf(@PathVariable("id") Long patientId) {
-        List<AttendanceReport> reports = sessionService.getAttendanceReportByPatient(patientId);
-        byte[] pdfData = pdfGenerationService.generateAttendanceReportPdf(reports);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=reporte_asistencia_paciente.pdf")
-                .header("Content-Type", "application/pdf")
-                .body(pdfData);
-    }
-
     @GetMapping("/report/therapist/{id}/pdf")
     public ResponseEntity<byte[]> getSessionsReportByTherapistPdf(@PathVariable("id") Long therapistId) {
         List<ReportSession> reports = sessionService.getSessionsReportByTherapist(therapistId);
-        byte[] pdfData = pdfGenerationService.generateTherapistReportPdf(reports);
+
+        Map<Long, Integer> planSessions = reports.stream()
+                .map(ReportSession::planId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        planId -> planId,
+                        planId -> planRepository.findById(planId)
+                                .map(Plan::getNumOfSessions)
+                                .orElse(0)
+                ));
+
+        byte[] pdfData = pdfGenerationService.generateTherapistReportPdf(reports, planSessions);
+
+        String filename = String.format("reporte_sesiones_terapeuta_%d_%s.pdf",
+                therapistId,
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=reporte_sesiones_terapeuta_" + therapistId + ".pdf")
+                .header("Content-Disposition", "attachment; filename=" + filename)
                 .header("Content-Type", "application/pdf")
                 .body(pdfData);
     }

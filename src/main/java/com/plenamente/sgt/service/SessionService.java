@@ -24,6 +24,4 @@ public interface SessionService {
     List<ReportSession> getAllSessionsReport();
     List<ReportSession> getSessionsReportByTherapist(Long therapistId);
     List<ReportSession> getSessionsReportByPatient(Long patientId);
-    List<AttendanceReport> getAttendanceReportByTherapist(Long therapistId);
-    List<AttendanceReport> getAttendanceReportByPatient(Long patientId);
 }

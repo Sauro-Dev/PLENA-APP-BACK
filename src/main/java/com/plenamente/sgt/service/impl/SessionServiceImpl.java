@@ -393,43 +393,6 @@ public class SessionServiceImpl implements SessionService {
                 )).collect(Collectors.toList());
     }
 
-    @Override
-    public List<AttendanceReport> getAttendanceReportByTherapist(Long therapistId) {
-        userRepository.findById(therapistId)
-                .filter(User::isTherapist)
-                .orElseThrow(() -> new ResourceNotFoundException("Terapeuta no encontrado"));
-
-        return sessionRepository.findByTherapist_IdUser(therapistId)
-                .stream()
-                .map(session -> new AttendanceReport(
-                        session.getIdSession(),
-                        session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
-                        session.getTherapist().getName(),
-                        session.getPatient().getName(),
-                        session.isTherapistPresent()
-                )).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<AttendanceReport> getAttendanceReportByPatient(Long patientId) {
-        patientRepository.findById(patientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
-
-        return sessionRepository.findByPatient_IdPatient(patientId)
-                .stream()
-                .map(session -> new AttendanceReport(
-                        session.getIdSession(),
-                        session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
-                        session.getTherapist().getName(),
-                        session.getPatient().getName(),
-                        session.isPatientPresent()
-                )).collect(Collectors.toList());
-    }
-
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
         return !sessionRepository.existsByTherapist_IdUserAndSessionDateAndEndTimeGreaterThanAndStartTimeLessThanAndIdSessionNot(
                 therapistId, date, startTime, endTime, 0L);
