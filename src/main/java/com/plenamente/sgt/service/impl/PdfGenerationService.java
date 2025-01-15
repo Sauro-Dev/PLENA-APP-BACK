@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +31,6 @@ public class PdfGenerationService {
 
     private final ResourceLoader resourceLoader;
 
-    // Constantes para las columnas de las tablas
-    private static final float[] SESSION_REPORT_COLUMNS = new float[]{1, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1};
     private static final float[] DETAILED_REPORT_COLUMNS = new float[]{2, 1.5f, 2, 2, 1.5f, 1, 1, 1, 2};
 
     private Table createHeaderWithLogo(String title) {
@@ -100,40 +99,6 @@ public class PdfGenerationService {
             document.setMargins(20, 20, 20, 20);
         }
         return document;
-    }
-
-    private Table createSessionReportTable() {
-        Table table = new Table(SESSION_REPORT_COLUMNS);
-        table.addHeaderCell("ID Sesión");
-        table.addHeaderCell("Fecha");
-        table.addHeaderCell("Hora Inicio");
-        table.addHeaderCell("Hora Fin");
-        table.addHeaderCell("Paciente Presente");
-        table.addHeaderCell("Razón");
-        table.addHeaderCell("Renovar Plan");
-        table.addHeaderCell("Reprogramada");
-        table.addHeaderCell("Terapeuta Presente");
-        table.addHeaderCell("ID Paciente");
-        table.addHeaderCell("ID Plan");
-        table.addHeaderCell("ID Sala");
-        table.addHeaderCell("ID Terapeuta");
-        return table;
-    }
-
-    private void addSessionReportRow(Table table, ReportSession report) {
-        table.addCell(String.valueOf(report.idSession()));
-        table.addCell(report.sessionDate().format(DATE_FORMATTER));
-        table.addCell(report.startTime().format(TIME_FORMATTER));
-        table.addCell(report.endTime().format(TIME_FORMATTER));
-        table.addCell(report.patientPresent() ? "Sí" : "No");
-        table.addCell(report.reason() == null ? "N/A" : report.reason());
-        table.addCell(String.valueOf(report.renewPlan()));
-        table.addCell(report.rescheduled() ? "Sí" : "No");
-        table.addCell(report.therapistPresent() ? "Sí" : "No");
-        table.addCell(String.valueOf(report.patientId()));
-        table.addCell(String.valueOf(report.planId()));
-        table.addCell(String.valueOf(report.roomId()));
-        table.addCell(String.valueOf(report.therapistId()));
     }
 
     private Table createTherapistReportTable() {
@@ -226,17 +191,6 @@ public class PdfGenerationService {
         return summaryTable;
     }
 
-    private byte[] generateBasicPdf(String title, Table table) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (Document document = initializeDocument(outputStream, false)) {
-            document.add(new Paragraph(title).setBold().setFontSize(16));
-            document.add(table);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al generar el PDF", e);
-        }
-        return outputStream.toByteArray();
-    }
-
     private byte[] generateDetailedReportPdf(String title, List<ReportSession> reports,
                                              Map<Long, Integer> planSessions, boolean isPatientReport) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -267,10 +221,82 @@ public class PdfGenerationService {
     }
 
     // Métodos públicos
-    public byte[] generateAllSessionsReportPdf(List<ReportSession> reports) {
-        Table table = createSessionReportTable();
-        reports.forEach(report -> addSessionReportRow(table, report));
-        return generateBasicPdf("Reporte General de Sesiones", table);
+    public byte[] generateAllSessionsReportPdf(List<ReportSession> reports, Map<Long, Integer> planSessions) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try (Document document = initializeDocument(outputStream, true)) {
+            document.add(createHeaderWithLogo("Reporte General de Sesiones"));
+            document.add(new Paragraph("\n"));
+
+            // Agrupar sesiones por terapeuta
+            Map<Long, List<ReportSession>> sessionsByTherapist = reports.stream()
+                    .collect(Collectors.groupingBy(ReportSession::therapistId));
+
+            // Para cada terapeuta, crear su tabla y resumen
+            sessionsByTherapist.forEach((therapistId, therapistSessions) -> {
+                try {
+                    // Obtener nombre del terapeuta
+                    String therapistName = therapistSessions.get(0).therapistName();
+
+                    // Agregar título de la sección del terapeuta
+                    document.add(new Paragraph(String.format("Terapeuta: %s", therapistName))
+                            .setBold()
+                            .setFontSize(14)
+                            .setTextAlignment(TextAlignment.LEFT));
+                    document.add(new Paragraph("\n"));
+
+                    // Crear y llenar tabla para este terapeuta
+                    Table therapistTable = createTherapistReportTable();
+                    therapistSessions.forEach(session ->
+                            addTherapistReportRow(therapistTable, session,
+                                    planSessions.getOrDefault(session.planId(), 0)));
+
+                    document.add(therapistTable);
+
+                    // Agregar resumen para este terapeuta
+                    document.add(createSummaryTable(therapistSessions, false));
+                    document.add(new Paragraph("\n\n")); // Espacio entre secciones de terapeutas
+
+                } catch (Exception e) {
+                    System.err.println("Error al generar sección del terapeuta: " + e.getMessage());
+                }
+            });
+
+            // Agregar resumen general al final
+            document.add(new Paragraph("Resumen General")
+                    .setBold()
+                    .setFontSize(14)
+                    .setTextAlignment(TextAlignment.LEFT));
+
+            Table generalSummary = new Table(2);
+            generalSummary.setWidth(UnitValue.createPercentValue(100));
+
+            Cell leftCell = new Cell();
+            leftCell.setBorder(null);
+            leftCell.add(new Paragraph("Total General:").setBold().setFontSize(12));
+            leftCell.add(new Paragraph(String.format("Total de sesiones: %d", reports.size())));
+            leftCell.add(new Paragraph(String.format("Sesiones reprogramadas: %d",
+                    reports.stream().filter(ReportSession::rescheduled).count())));
+            leftCell.setTextAlignment(TextAlignment.LEFT);
+            generalSummary.addCell(leftCell);
+
+            Cell rightCell = new Cell();
+            rightCell.setBorder(null);
+            rightCell.add(new Paragraph("Asistencias Totales:").setBold().setFontSize(12));
+            rightCell.add(new Paragraph(String.format("Terapeutas: %d",
+                    reports.stream().filter(ReportSession::therapistPresent).count())));
+            rightCell.add(new Paragraph(String.format("Pacientes: %d",
+                    reports.stream().filter(ReportSession::patientPresent).count())));
+            rightCell.setTextAlignment(TextAlignment.RIGHT);
+            generalSummary.addCell(rightCell);
+
+            document.add(generalSummary);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error al generar el PDF del reporte general", e);
+        }
+
+        return outputStream.toByteArray();
     }
 
     public byte[] generatePatientReportPdf(List<ReportSession> reports, Map<Long, Integer> planSessions) {

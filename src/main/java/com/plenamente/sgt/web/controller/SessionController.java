@@ -140,10 +140,24 @@ public class SessionController {
     @GetMapping("/report/all/pdf")
     public ResponseEntity<byte[]> getAllSessionsReportPdf() {
         List<ReportSession> reports = sessionService.getAllSessionsReport();
-        byte[] pdfData = pdfGenerationService.generateAllSessionsReportPdf(reports);
+
+        Map<Long, Integer> planSessions = reports.stream()
+                .map(ReportSession::planId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        planId -> planId,
+                        planId -> planRepository.findById(planId)
+                                .map(Plan::getNumOfSessions)
+                                .orElse(0)
+                ));
+
+        byte[] pdfData = pdfGenerationService.generateAllSessionsReportPdf(reports, planSessions);
+
+        String filename = String.format("reporte_general_sesiones_%s.pdf",
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=reporte_general_sesiones.pdf")
+                .header("Content-Disposition", "attachment; filename=" + filename)
                 .header("Content-Type", "application/pdf")
                 .body(pdfData);
     }
