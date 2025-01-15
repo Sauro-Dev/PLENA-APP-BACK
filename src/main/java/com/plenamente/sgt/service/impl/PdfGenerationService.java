@@ -185,19 +185,33 @@ public class PdfGenerationService {
 
             document.add(table);
 
+
+            document.add(table);
             document.add(new Paragraph("\n"));
-            Paragraph resumen = new Paragraph("Resumen:")
-                    .setBold()
-                    .setFontSize(12)
-                    .setTextAlignment(TextAlignment.CENTER);
-            document.add(resumen);
 
-            addCenteredParagraph(document, String.format("Total de sesiones: %d", reports.size()));
-            addCenteredParagraph(document, String.format("N° de Asistencias del terapeuta: %d",
-                    reports.stream().filter(ReportSession::therapistPresent).count()));
-            addCenteredParagraph(document, String.format("Sesiones reprogramadas: %d",
-                    reports.stream().filter(ReportSession::rescheduled).count()));
+            Table summaryTable = new Table(2);
+            summaryTable.setWidth(UnitValue.createPercentValue(100));
 
+            // Columna izquierda - Resumen
+            Cell leftCell = new Cell();
+            leftCell.setBorder(null);
+            leftCell.add(new Paragraph("Resumen:").setBold().setFontSize(12));
+            leftCell.add(new Paragraph(String.format("Total de sesiones: %d", reports.size())));
+            leftCell.add(new Paragraph(String.format("Sesiones reprogramadas: %d",
+                    reports.stream().filter(ReportSession::rescheduled).count())));
+            leftCell.setTextAlignment(TextAlignment.LEFT);
+            summaryTable.addCell(leftCell);
+
+            // Columna derecha - Total de Asistencias
+            Cell rightCell = new Cell();
+            rightCell.setBorder(null);
+            rightCell.add(new Paragraph("Asistencias:").setBold().setFontSize(12));
+            rightCell.add(new Paragraph(String.format("Total: %d",
+                    reports.stream().filter(ReportSession::therapistPresent).count())));
+            rightCell.setTextAlignment(TextAlignment.RIGHT);
+            summaryTable.addCell(rightCell);
+
+            document.add(summaryTable);
         } catch (Exception e) {
             throw new RuntimeException("Error al generar el PDF del reporte de terapeuta", e);
         }
