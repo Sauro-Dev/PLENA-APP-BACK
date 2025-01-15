@@ -2,10 +2,13 @@ package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.SessionDto.*;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
+import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
+import com.plenamente.sgt.infra.repository.PlanRepository;
 import com.plenamente.sgt.service.SessionService;
+import com.plenamente.sgt.service.impl.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -14,14 +17,27 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
 public class SessionController {
     private final SessionService sessionService;
+    private final PdfGenerationService pdfGenerationService;
+    private final PlanRepository planRepository;
+    private record DateRange(LocalDate startDate, LocalDate endDate) {}
+
+    private DateRange getPreviousMonthRange() {
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfPreviousMonth = today.minusMonths(1).withDayOfMonth(1);
+        LocalDate lastDayOfPreviousMonth = today.withDayOfMonth(1).minusDays(1);
+        return new DateRange(firstDayOfPreviousMonth, lastDayOfPreviousMonth);
+    }
 
     @PreAuthorize("hasAnyRole('SECRETARY', 'ADMIN')")
     @PostMapping("/register")
@@ -127,5 +143,145 @@ public class SessionController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.ok(new ArrayList<>());
         }
+    }
+
+    @GetMapping("/report/all/pdf")
+    public ResponseEntity<byte[]> getAllSessionsReportPdf(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getAllSessionsReportByDateRange(startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getAllSessionsReportByDateRange(
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
+
+        Map<Long, Integer> planSessions = reports.stream()
+                .map(ReportSession::planId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        planId -> planId,
+                        planId -> planRepository.findById(planId)
+                                .map(Plan::getNumOfSessions)
+                                .orElse(0)
+                ));
+
+        byte[] pdfData = pdfGenerationService.generateAllSessionsReportPdf(reports, planSessions);
+
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_general_sesiones_%s_%s.pdf",
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_general_sesiones_%s.pdf",
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Type", "application/pdf")
+                .body(pdfData);
+    }
+
+    @GetMapping("/report/therapist/{id}/pdf")
+    public ResponseEntity<byte[]> getSessionsReportByTherapistPdf(
+            @PathVariable("id") Long therapistId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getSessionsReportByTherapistAndDateRange(therapistId, startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getSessionsReportByTherapistAndDateRange(
+                    therapistId,
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
+
+        Map<Long, Integer> planSessions = reports.stream()
+                .map(ReportSession::planId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        planId -> planId,
+                        planId -> planRepository.findById(planId)
+                                .map(Plan::getNumOfSessions)
+                                .orElse(0)
+                ));
+
+        byte[] pdfData = pdfGenerationService.generateTherapistReportPdf(reports, planSessions);
+
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_sesiones_terapeuta_%d_%s_%s.pdf",
+                    therapistId,
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_sesiones_terapeuta_%d_%s.pdf",
+                    therapistId,
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Type", "application/pdf")
+                .body(pdfData);
+    }
+
+    @GetMapping("/report/patient/{id}/pdf")
+    public ResponseEntity<byte[]> getSessionsReportByPatientPdf(
+            @PathVariable("id") Long patientId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ReportSession> reports;
+        if (startDate != null && endDate != null) {
+            reports = sessionService.getSessionsReportByPatientAndDateRange(patientId, startDate, endDate);
+        } else {
+            DateRange previousMonth = getPreviousMonthRange();
+            reports = sessionService.getSessionsReportByPatientAndDateRange(
+                    patientId,
+                    previousMonth.startDate(),
+                    previousMonth.endDate());
+        }
+
+        Map<Long, Integer> planSessions = reports.stream()
+                .map(ReportSession::planId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        planId -> planId,
+                        planId -> planRepository.findById(planId)
+                                .map(Plan::getNumOfSessions)
+                                .orElse(0)
+                ));
+
+        byte[] pdfData = pdfGenerationService.generatePatientReportPdf(reports, planSessions);
+
+        String filename;
+        if (startDate != null && endDate != null) {
+            filename = String.format("reporte_sesiones_paciente_%d_%s_%s.pdf",
+                    patientId,
+                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+        } else {
+            DateRange range = getPreviousMonthRange();
+            filename = String.format("reporte_sesiones_paciente_%d_%s.pdf",
+                    patientId,
+                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
+        }
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Type", "application/pdf")
+                .body(pdfData);
     }
 }
