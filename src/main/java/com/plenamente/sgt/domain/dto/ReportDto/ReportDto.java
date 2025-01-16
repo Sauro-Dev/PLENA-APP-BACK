@@ -1,24 +1,16 @@
 package com.plenamente.sgt.domain.dto.ReportDto;
 
-import lombok.Data;
+import com.plenamente.sgt.domain.dto.MedicalHistoryDto.DocumentMetadataDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class ReportDto {
+public class ReportDto extends DocumentMetadataDto {
     private Long idReport;
     private Long medicalHistoryId;
-    private String name;
-    private String description;
-    private String fileUrl;
-    private LocalDateTime reportPeriodStart;
-    private LocalDateTime reportPeriodEnd;
-    private String reportType;
-    private LocalDateTime uploadedAt;
+    private Integer treatmentMonth;
 }
-

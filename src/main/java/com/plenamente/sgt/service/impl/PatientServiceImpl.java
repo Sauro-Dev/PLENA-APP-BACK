@@ -6,15 +6,12 @@ import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
 import com.plenamente.sgt.domain.dto.TutorDto.TutorDTO;
-<<<<<<< HEAD
 import com.plenamente.sgt.domain.entity.MedicalHistory;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Plan;
 import com.plenamente.sgt.domain.entity.Tutor;
 import com.plenamente.sgt.infra.repository.MedicalHistoryRepository;
-=======
 import com.plenamente.sgt.domain.entity.*;
->>>>>>> d213751a7e407e685fe1aca4ee252f5ae33c1812
 import com.plenamente.sgt.infra.repository.PatientRepository;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
@@ -38,11 +35,8 @@ public class PatientServiceImpl implements PatientService {
     private final PatientRepository patientRepository;
     private final PlanRepository planRepository;
     private final SessionService sessionService;
-<<<<<<< HEAD
     private final MedicalHistoryRepository medicalHistoryRepository;
-=======
     private final SessionRepository sessionRepository;
->>>>>>> d213751a7e407e685fe1aca4ee252f5ae33c1812
 
     public Patient createPatient(RegisterPatient registerPatient) {
         if (patientRepository.existsByDni(registerPatient.dni())) {

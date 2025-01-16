@@ -17,9 +17,8 @@ public class EvaluationDocument extends DocumentMetadata {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDocument;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_medical_history")
+    @JoinColumn(name = "id_medical_history", nullable = false)
     private MedicalHistory medicalHistory;
-    private String evaluationType;
-    private LocalDate evaluationDate;
 }

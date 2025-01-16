@@ -9,20 +9,22 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import java.time.Duration;
 @Configuration
 public class RedisConfig {
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
+
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         LoggingRedisSerializer serializer = new LoggingRedisSerializer(objectMapper);
+
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(serializer);
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(serializer);
+
         template.afterPropertiesSet();
         return template;
     }
@@ -32,10 +34,10 @@ public class RedisConfig {
         objectMapper.registerModule(new JavaTimeModule());
         LoggingRedisSerializer serializer = new LoggingRedisSerializer(objectMapper);
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(30)) // cuantos minutos se mantendrá en cache????
                 .disableCachingNullValues()
                 .serializeKeysWith(
                         org.springframework.data.redis.serializer.RedisSerializationContext
+                                //.entryTtl(Duration.ofMinutes(30))
                                 .SerializationPair
                                 .fromSerializer(new StringRedisSerializer())
                 )

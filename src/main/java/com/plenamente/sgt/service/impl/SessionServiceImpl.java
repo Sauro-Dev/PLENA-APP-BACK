@@ -315,28 +315,13 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public Session markPatientPresence(MarkPatientPresenceSession dto) {
-        Session session = sessionRepository.findByIdSession(dto.sessionId())
+    public Session markPresence(PresenceDTO dto) {
+        Session session = sessionRepository.findById(dto.sessionId())
                 .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
-
-        if (session.isPatientPresent() == dto.patientPresent()) {
-            throw new IllegalArgumentException("No hay cambios en la asistencia del paciente.");
-        }
-
-        session.setPatientPresent(dto.patientPresent());
-        return sessionRepository.save(session);
-    }
-
-    @Override
-    public Session markTherapistPresence(MarkTherapistPresenceSession dto) {
-        Session session = sessionRepository.findByIdSession(dto.sessionId())
-                .orElseThrow(() -> new EntityNotFoundException("Sesión no encontrada"));
-
-        if (session.isTherapistPresent() == dto.therapistPresent()) {
-            throw new IllegalArgumentException("No hay cambios en la asistencia del terapeuta.");
-        }
 
         session.setTherapistPresent(dto.therapistPresent());
+        session.setPatientPresent(dto.patientPresent());
+
         return sessionRepository.save(session);
     }
 

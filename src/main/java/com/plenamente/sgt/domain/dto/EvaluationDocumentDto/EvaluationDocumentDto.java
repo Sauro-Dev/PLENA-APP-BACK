@@ -1,22 +1,16 @@
 package com.plenamente.sgt.domain.dto.EvaluationDocumentDto;
 
+import com.plenamente.sgt.domain.dto.MedicalHistoryDto.DocumentMetadataDto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EvaluationDocumentDto {
+public class EvaluationDocumentDto extends DocumentMetadataDto {
     private Long idDocument;
     private Long medicalHistoryId;
-    private String name;
-    private String description;
-    private String fileUrl;
-    private String evaluationType;
-    private LocalDateTime evaluationDate;
-    private LocalDateTime uploadedAt;
 }

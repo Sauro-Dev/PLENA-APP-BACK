@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -50,7 +51,7 @@ public class NginxStorageServiceImpl implements StorageService {
             Files.createDirectories(targetLocation);
 
             String uniqueFilename = generateUniqueFilename(
-                    StringUtils.cleanPath(file.getOriginalFilename())
+                    StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()))
             );
             Path destinationFile = targetLocation.resolve(uniqueFilename);
 
@@ -70,15 +71,30 @@ public class NginxStorageServiceImpl implements StorageService {
     @Override
     public Resource loadAsResource(String filename) {
         try {
-            Path file = storageProperties.getLocation().resolve(filename);
+            // Si la URL es completa, extraemos solo la parte relativa
+            String relativePath = filename;
+            if (filename.startsWith(storageProperties.getServerUrl())) {
+                relativePath = filename.replace(storageProperties.getServerUrl() + "/static/", "");
+            }
+
+            log.debug("Intentando cargar archivo con ruta relativa: {}", relativePath);
+            Path file = storageProperties.getLocation().resolve(relativePath);
+            log.debug("Ruta completa del archivo: {}", file.toAbsolutePath());
+
             Resource resource = new UrlResource(file.toUri());
 
-            if (resource.exists() || resource.isReadable()) {
+            if (resource.exists() && resource.isReadable()) {
+                log.debug("Archivo encontrado y legible");
                 return resource;
             } else {
-                throw new StorageFileNotFoundException("Could not read file: " + filename);
+                log.error("Archivo no encontrado o no legible en: {}", file.toAbsolutePath());
+                throw new StorageFileNotFoundException("Could not read file: " + relativePath);
             }
         } catch (MalformedURLException e) {
+            log.error("Error al crear URL para el archivo: {}", filename, e);
+            throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+        } catch (Exception e) {
+            log.error("Error al cargar el archivo: {}", filename, e);
             throw new StorageFileNotFoundException("Could not read file: " + filename, e);
         }
     }
@@ -86,9 +102,14 @@ public class NginxStorageServiceImpl implements StorageService {
     @Override
     public void delete(String filename) {
         try {
-            Path file = storageProperties.getLocation().resolve(filename);
+            String relativePath = filename;
+            if (filename.startsWith(storageProperties.getServerUrl())) {
+                relativePath = filename.replace(storageProperties.getServerUrl() + "/static/", "");
+            }
+
+            Path file = storageProperties.getLocation().resolve(relativePath);
             Files.deleteIfExists(file);
-            log.debug("Deleted file: {}", filename);
+            log.debug("Deleted file: {}", relativePath);
         } catch (IOException e) {
             log.error("Could not delete file: {}", filename, e);
             throw new StorageException("Could not delete file: " + filename, e);

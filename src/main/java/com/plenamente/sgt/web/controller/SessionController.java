@@ -81,19 +81,9 @@ public class SessionController {
         }
     }
 
-    @PutMapping("/presence/patient/{id}")
-    public ResponseEntity<Session> markPatientPresence(@PathVariable("id") Long sessionId,
-                                                       @RequestBody MarkPatientPresenceSession dto) {
-        dto = new MarkPatientPresenceSession(sessionId, dto.patientPresent());
-        Session updatedSession = sessionService.markPatientPresence(dto);
-        return ResponseEntity.ok(updatedSession);
-    }
-
-    @PutMapping("/presence/therapist/{id}")
-    public ResponseEntity<Session> markTherapistPresence(@PathVariable("id") Long sessionId,
-                                                         @RequestBody MarkTherapistPresenceSession dto) {
-        dto = new MarkTherapistPresenceSession(sessionId, dto.therapistPresent());
-        Session updatedSession = sessionService.markTherapistPresence(dto);
+    @PutMapping("/presence")
+    public ResponseEntity<Session> markPresence(@RequestBody PresenceDTO dto) {
+        Session updatedSession = sessionService.markPresence(dto);
         return ResponseEntity.ok(updatedSession);
     }
 

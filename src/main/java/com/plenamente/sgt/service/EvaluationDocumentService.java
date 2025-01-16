@@ -7,7 +7,7 @@ import java.util.List;
 
 
 public interface EvaluationDocumentService {
-     EvaluationDocumentDto uploadDocument(Long patientId, Long medicalHistoryId, MultipartFile file, EvaluationDocumentDto dto);;
+     EvaluationDocumentDto uploadDocument(Long patientId, Long medicalHistoryId, MultipartFile file, String name, String description);
      EvaluationDocumentDto getDocument(Long documentId);
      void deleteDocument(Long documentId);
      List<EvaluationDocumentDto> getDocumentsByMedicalHistory(Long medicalHistoryId);

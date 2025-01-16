@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @Entity(name = "Report")
 @Table(name = "reports")
 @Getter
@@ -16,10 +14,11 @@ public class Report extends DocumentMetadata {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReport;
-    @ManyToOne
-    @JoinColumn(name = "id_medical_history")
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_medical_history", nullable = false)
     private MedicalHistory medicalHistory;
-    private LocalDateTime reportPeriodStart;
-    private LocalDateTime reportPeriodEnd;
-    private String reportType;
+
+    @Column(nullable = false)
+    private Integer treatmentMonth;
 }

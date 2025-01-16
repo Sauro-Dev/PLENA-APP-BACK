@@ -1,56 +1,49 @@
 package com.plenamente.sgt.infra.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.plenamente.sgt.domain.dto.MaterialDto.RegisterMaterial;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
 
-import java.io.IOException;
-import java.util.List;
-
 @Slf4j
 public class LoggingRedisSerializer extends GenericJackson2JsonRedisSerializer {
 
-    private final ObjectMapper objectMapper;
-
     public LoggingRedisSerializer(ObjectMapper objectMapper) {
         super(objectMapper);
-        this.objectMapper = objectMapper;
     }
 
     @Override
-    public byte[] serialize(Object t) throws SerializationException {
+    @NonNull
+    public byte[] serialize(@Nullable Object source) throws SerializationException {
         try {
-            log.info("Serializando objeto: {}", t);
-            byte[] result = super.serialize(t);
-            log.info("Objeto serializado exitosamente: {}", new String(result));
+            log.debug("Serializando objeto: {}", source);
+            if (source == null) {
+                return new byte[0];
+            }
+            byte[] result = super.serialize(source);
+            log.debug("Objeto serializado exitosamente");
             return result;
-        } catch (SerializationException e) {
-            log.error("Error serializando objeto: {}", t, e);
-            throw e;
+        } catch (Exception e) {
+            log.error("Error serializando objeto: {}", source, e);
+            throw new SerializationException("Error serializando objeto", e);
         }
     }
 
     @Override
-    public Object deserialize(byte[] bytes) throws SerializationException {
+    @NonNull
+    public Object deserialize(@NonNull byte[] source) throws SerializationException {
         try {
-            if (bytes == null || bytes.length == 0) {
-                log.warn("Bytes vacíos durante deserialización.");
+            if (source.length == 0) {
                 return null;
             }
-
-            // Deserialización explícita con TypeReference
-            List<RegisterMaterial> result = objectMapper.readValue(bytes, new TypeReference<>() {});
-            log.info("Objeto deserializado exitosamente: {}", result);
+            Object result = super.deserialize(source);
+            log.debug("Objeto deserializado exitosamente: {}", result);
             return result;
-        } catch (JsonProcessingException e) {
-            log.error("Error deserializando objeto desde Redis: {}", new String(bytes), e);
+        } catch (Exception e) {
+            log.error("Error deserializando objeto", e);
             throw new SerializationException("Error deserializando objeto", e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 }

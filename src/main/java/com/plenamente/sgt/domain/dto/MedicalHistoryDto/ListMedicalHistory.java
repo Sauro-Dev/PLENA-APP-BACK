@@ -1,16 +1,13 @@
 package com.plenamente.sgt.domain.dto.MedicalHistoryDto;
 
-import com.plenamente.sgt.domain.entity.EvaluationDocument;
-import com.plenamente.sgt.domain.entity.Report;
+import com.plenamente.sgt.domain.dto.ReportDto.ReportSummaryDTO;
 
 public record ListMedicalHistory(
-        Report report,
-        // VARIABLES DEL EVALUATION DOCUMENT
+        Long id,
+        ReportSummaryDTO report,
         String documentName,
         String description,
-        String documentType,
-        byte[] archive,
-        String name,
-        Long id
+        String contentType,
+        String name
 ) {
 }

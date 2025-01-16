@@ -40,4 +40,6 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     @Query("SELECT MAX(s.renewPlan) FROM Session s WHERE s.patient.idPatient = :patientId")
     Optional<Integer> findMaxRenewPlanByPatientId(Long patientId);
+
+    Optional<Session> findFirstByPatient_IdPatientOrderBySessionDateAsc(Long patientId);
 }
