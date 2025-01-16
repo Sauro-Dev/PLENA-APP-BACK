@@ -8,7 +8,12 @@ import com.plenamente.sgt.infra.repository.*;
 import com.plenamente.sgt.service.SessionService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import static com.plenamente.sgt.infra.config.ReportConstants.PAGE_SIZE;
 import org.springframework.stereotype.Service;
+
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -17,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -393,86 +400,94 @@ public class SessionServiceImpl implements SessionService {
                 )).collect(Collectors.toList());
     }
 
-    @Override
-    public List<ReportSession> getAllSessionsReportByDateRange(LocalDate startDate, LocalDate endDate) {
-        return sessionRepository.findBySessionDateBetweenOrderBySessionDateAsc(startDate, endDate)
-                .stream()
-                .map(session -> new ReportSession(
-                        session.getIdSession(),
-                        session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getTherapist().getName(),
-                        session.getPatient().getName(),
-                        session.getRoom().getName(),
-                        session.getRenewPlan(),
-                        session.getReason(),
-                        session.getPatient().getIdPatient(),
-                        session.getPlan().getIdPlan(),
-                        session.getRoom().getIdRoom(),
-                        session.getTherapist().getIdUser(),
-                        session.isRescheduled()
-                ))
-                .collect(Collectors.toList());
+    private ReportSession mapToReportSession(Session session) {
+        return new ReportSession(
+                session.getIdSession(),
+                session.getSessionDate(),
+                session.getStartTime(),
+                session.getEndTime(),
+                session.isTherapistPresent(),
+                session.isPatientPresent(),
+                session.getTherapist().getName(),
+                session.getPatient().getName(),
+                session.getRoom().getName(),
+                session.getRenewPlan(),
+                session.getReason(),
+                session.getPatient().getIdPatient(),
+                session.getPlan().getIdPlan(),
+                session.getRoom().getIdRoom(),
+                session.getTherapist().getIdUser(),
+                session.isRescheduled()
+        );
     }
 
     @Override
-    public List<ReportSession> getSessionsReportByTherapistAndDateRange(Long therapistId, LocalDate startDate, LocalDate endDate) {
+    public List<ReportSession> getAllSessionsReportByDateRange(LocalDate startDate, LocalDate endDate) {
+        List<ReportSession> allReports = new ArrayList<>();
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+        Page<Session> page;
+
+        do {
+            page = sessionRepository.findBySessionDateBetweenOrderBySessionDateAsc(startDate, endDate, pageable);
+            List<ReportSession> pageReports = page.getContent().stream()
+                    .map(this::mapToReportSession)
+                    .toList();
+            allReports.addAll(pageReports);
+            pageable = page.nextPageable();
+        } while (page.hasNext());
+
+        return allReports;
+    }
+
+    @Override
+    public List<ReportSession> getSessionsReportByTherapistAndDateRange(
+            Long therapistId, LocalDate startDate, LocalDate endDate) {
         userRepository.findById(therapistId)
                 .filter(User::isTherapist)
                 .orElseThrow(() -> new ResourceNotFoundException("Terapeuta no encontrado"));
 
-        return sessionRepository.findByTherapistIdAndSessionDateBetweenOrderBySessionDateAsc(therapistId, startDate, endDate)
-                .stream()
-                .map(session -> new ReportSession(
-                        session.getIdSession(),
-                        session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getTherapist().getName(),
-                        session.getPatient().getName(),
-                        session.getRoom().getName(),
-                        session.getRenewPlan(),
-                        session.getReason(),
-                        session.getPatient().getIdPatient(),
-                        session.getPlan().getIdPlan(),
-                        session.getRoom().getIdRoom(),
-                        session.getTherapist().getIdUser(),
-                        session.isRescheduled()
-                ))
-                .collect(Collectors.toList());
+        List<ReportSession> allReports = new ArrayList<>();
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+        Page<Session> page;
+
+        do {
+            page = sessionRepository.findByTherapistIdAndSessionDateBetweenOrderBySessionDateAsc(
+                    therapistId, startDate, endDate, pageable);
+
+            List<ReportSession> pageReports = page.getContent().stream()
+                    .map(this::mapToReportSession)
+                    .toList();
+
+            allReports.addAll(pageReports);
+            pageable = page.nextPageable();
+        } while (page.hasNext());
+
+        return allReports;
     }
 
     @Override
-    public List<ReportSession> getSessionsReportByPatientAndDateRange(Long patientId, LocalDate startDate, LocalDate endDate) {
+    public List<ReportSession> getSessionsReportByPatientAndDateRange(
+            Long patientId, LocalDate startDate, LocalDate endDate) {
         patientRepository.findById(patientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
 
-        return sessionRepository.findByPatientIdAndSessionDateBetweenOrderBySessionDateAsc(patientId, startDate, endDate)
-                .stream()
-                .map(session -> new ReportSession(
-                        session.getIdSession(),
-                        session.getSessionDate(),
-                        session.getStartTime(),
-                        session.getEndTime(),
-                        session.isTherapistPresent(),
-                        session.isPatientPresent(),
-                        session.getTherapist().getName(),
-                        session.getPatient().getName(),
-                        session.getRoom().getName(),
-                        session.getRenewPlan(),
-                        session.getReason(),
-                        session.getPatient().getIdPatient(),
-                        session.getPlan().getIdPlan(),
-                        session.getRoom().getIdRoom(),
-                        session.getTherapist().getIdUser(),
-                        session.isRescheduled()
-                ))
-                .collect(Collectors.toList());
+        List<ReportSession> allReports = new ArrayList<>();
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+        Page<Session> page;
+
+        do {
+            page = sessionRepository.findByPatientIdAndSessionDateBetweenOrderBySessionDateAsc(
+                    patientId, startDate, endDate, pageable);
+
+            List<ReportSession> pageReports = page.getContent().stream()
+                    .map(this::mapToReportSession)
+                    .toList();
+
+            allReports.addAll(pageReports);
+            pageable = page.nextPageable();
+        } while (page.hasNext());
+
+        return allReports;
     }
 
     public boolean isTherapistAvailable(Long therapistId, LocalDate date, LocalTime startTime, LocalTime endTime) {

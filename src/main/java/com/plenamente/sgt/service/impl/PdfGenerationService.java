@@ -14,11 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import static com.plenamente.sgt.infra.config.ReportConstants.BATCH_SIZE;
 
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,10 +31,9 @@ public class PdfGenerationService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
     private static final String LOGO_PATH = "classpath:static/plenaLOGO-back.jpg";
     private static final float LOGO_WIDTH = 40f;
-
     private final ResourceLoader resourceLoader;
-
     private static final float[] DETAILED_REPORT_COLUMNS = new float[]{2, 1.5f, 2, 2, 1.5f, 1, 1, 1, 2};
+
 
     private Table createHeaderWithLogo(String title) {
         Table headerTable = new Table(2);
@@ -88,41 +90,18 @@ public class PdfGenerationService {
         table.addCell(cell);
     }
 
-    private Document initializeDocument(ByteArrayOutputStream outputStream, boolean rotate) {
+    private Document initializeDocument(ByteArrayOutputStream outputStream) {
         var pdfWriter = new PdfWriter(outputStream);
         var pdfDocument = new com.itextpdf.kernel.pdf.PdfDocument(pdfWriter);
-        Document document = rotate ?
-                new Document(pdfDocument, PageSize.A4.rotate()) :
-                new Document(pdfDocument);
-
-        if (rotate) {
-            document.setMargins(20, 20, 20, 20);
-        }
+        Document document = new Document(pdfDocument, PageSize.A4.rotate());
+        document.setMargins(20, 20, 20, 20);
         return document;
     }
 
-    private Table createTherapistReportTable() {
-        Table table = new Table(DETAILED_REPORT_COLUMNS);
-        table.setHorizontalAlignment(HorizontalAlignment.CENTER);
-        table.setWidth(UnitValue.createPercentValue(95));
-
-        addCenteredHeaderCell(table, "Fecha");
-        addCenteredHeaderCell(table, "Hora Inicio");
-        addCenteredHeaderCell(table, "Paciente");
-        addCenteredHeaderCell(table, "Sesiones/Mes");
-        addCenteredHeaderCell(table, "Sala");
-        addCenteredHeaderCell(table, "Asist. Paciente");
-        addCenteredHeaderCell(table, "Asist. Terapeuta");
-        addCenteredHeaderCell(table, "Reprogramada");
-        addCenteredHeaderCell(table, "Razón");
-
-        return table;
-    }
-
-    private void addTherapistReportRow(Table table, ReportSession report, int numSessions) {
+    private void addReportRow(Table table, ReportSession report, int numSessions, boolean isPatientReport) {
         addCenteredCell(table, report.sessionDate().format(DATE_FORMATTER));
         addCenteredCell(table, report.startTime().format(TIME_FORMATTER));
-        addCenteredCell(table, report.patientName());
+        addCenteredCell(table, isPatientReport ? report.therapistName() : report.patientName());
         addCenteredCell(table, String.valueOf(numSessions * 4));
         addCenteredCell(table, report.roomName());
         addCenteredCell(table, report.patientPresent() ? "Sí" : "No");
@@ -131,14 +110,14 @@ public class PdfGenerationService {
         addCenteredCell(table, report.reason() != null ? report.reason() : "N/A");
     }
 
-    private Table createPatientReportTable() {
+    private Table createReportTable(boolean isPatientReport) {
         Table table = new Table(DETAILED_REPORT_COLUMNS);
         table.setHorizontalAlignment(HorizontalAlignment.CENTER);
         table.setWidth(UnitValue.createPercentValue(95));
 
         addCenteredHeaderCell(table, "Fecha");
         addCenteredHeaderCell(table, "Hora Inicio");
-        addCenteredHeaderCell(table, "Terapeuta");
+        addCenteredHeaderCell(table, isPatientReport ? "Terapeuta" : "Paciente");
         addCenteredHeaderCell(table, "Sesiones/Mes");
         addCenteredHeaderCell(table, "Sala");
         addCenteredHeaderCell(table, "Asist. Paciente");
@@ -147,18 +126,6 @@ public class PdfGenerationService {
         addCenteredHeaderCell(table, "Razón");
 
         return table;
-    }
-
-    private void addPatientReportRow(Table table, ReportSession report, int numSessions) {
-        addCenteredCell(table, report.sessionDate().format(DATE_FORMATTER));
-        addCenteredCell(table, report.startTime().format(TIME_FORMATTER));
-        addCenteredCell(table, report.therapistName());
-        addCenteredCell(table, String.valueOf(numSessions * 4));
-        addCenteredCell(table, report.roomName());
-        addCenteredCell(table, report.patientPresent() ? "Sí" : "No");
-        addCenteredCell(table, report.therapistPresent() ? "Sí" : "No");
-        addCenteredCell(table, report.rescheduled() ? "Sí" : "No");
-        addCenteredCell(table, report.reason() != null ? report.reason() : "N/A");
     }
 
     private Table createSummaryTable(List<ReportSession> reports, boolean isPatientReport) {
@@ -191,21 +158,73 @@ public class PdfGenerationService {
         return summaryTable;
     }
 
+    private Table createGeneralSummaryTable(int totalSessions, long totalRescheduled,
+                                            long totalTherapistPresent, long totalPatientPresent) {
+        Table generalSummary = new Table(2);
+        generalSummary.setWidth(UnitValue.createPercentValue(100));
+
+        Cell leftCell = new Cell();
+        leftCell.setBorder(null);
+        leftCell.add(new Paragraph("Total General:").setBold().setFontSize(12));
+        leftCell.add(new Paragraph(String.format("Total de sesiones: %d", totalSessions)));
+        leftCell.add(new Paragraph(String.format("Sesiones reprogramadas: %d", totalRescheduled)));
+        leftCell.setTextAlignment(TextAlignment.LEFT);
+        generalSummary.addCell(leftCell);
+
+        Cell rightCell = new Cell();
+        rightCell.setBorder(null);
+        rightCell.add(new Paragraph("Asistencias Totales:").setBold().setFontSize(12));
+        rightCell.add(new Paragraph(String.format("Terapeutas: %d", totalTherapistPresent)));
+        rightCell.add(new Paragraph(String.format("Pacientes: %d", totalPatientPresent)));
+        rightCell.setTextAlignment(TextAlignment.RIGHT);
+        generalSummary.addCell(rightCell);
+
+        return generalSummary;
+    }
+
+    private void processTherapistSection(Document document, Long therapistId,
+                                         List<ReportSession> therapistSessions,
+                                         Map<Long, Integer> planSessions) {
+        try {
+            String therapistName = therapistSessions.get(0).therapistName();
+            document.add(new Paragraph(String.format("Terapeuta: %s", therapistName))
+                    .setBold()
+                    .setFontSize(14)
+                    .setTextAlignment(TextAlignment.LEFT));
+            document.add(new Paragraph("\n"));
+
+            Table therapistTable = createReportTable(false);
+
+            for (int i = 0; i < therapistSessions.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, therapistSessions.size());
+                List<ReportSession> sessionBatch = therapistSessions.subList(i, endIndex);
+
+                sessionBatch.forEach(session ->
+                        addReportRow(therapistTable, session,
+                                planSessions.getOrDefault(session.planId(), 0), false));
+            }
+
+            document.add(therapistTable);
+            document.add(createSummaryTable(therapistSessions, false));
+            document.add(new Paragraph("\n\n"));
+
+        } catch (Exception e) {
+            System.err.println("Error al procesar sección del terapeuta " + therapistId +
+                    ": " + e.getMessage());
+        }
+    }
+
     private byte[] generateDetailedReportPdf(String title, List<ReportSession> reports,
                                              Map<Long, Integer> planSessions, boolean isPatientReport) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (Document document = initializeDocument(outputStream, true)) {
+        try (Document document = initializeDocument(outputStream)) {
             document.add(createHeaderWithLogo(title));
             document.add(new Paragraph("\n"));
 
-            Table table = isPatientReport ? createPatientReportTable() : createTherapistReportTable();
+            Table table = createReportTable(isPatientReport);
             reports.forEach(report -> {
                 int numSessions = planSessions.getOrDefault(report.planId(), 0);
-                if (isPatientReport) {
-                    addPatientReportRow(table, report, numSessions);
-                } else {
-                    addTherapistReportRow(table, report, numSessions);
-                }
+                addReportRow(table, report, numSessions, isPatientReport);
             });
 
             document.add(table);
@@ -220,78 +239,57 @@ public class PdfGenerationService {
         return outputStream.toByteArray();
     }
 
+    private void addGeneralSummary(Document document, List<ReportSession> reports) {
+        document.add(new Paragraph("Resumen General")
+                .setBold()
+                .setFontSize(14)
+                .setTextAlignment(TextAlignment.LEFT));
+
+        // Calcular estadísticas en lotes para optimizar memoria
+        AtomicLong totalRescheduled = new AtomicLong(0);
+        AtomicLong totalTherapistPresent = new AtomicLong(0);
+        AtomicLong totalPatientPresent = new AtomicLong(0);
+
+        for (int i = 0; i < reports.size(); i += BATCH_SIZE) {
+            int endIndex = Math.min(i + BATCH_SIZE, reports.size());
+            List<ReportSession> batch = reports.subList(i, endIndex);
+
+            totalRescheduled.addAndGet(batch.stream().filter(ReportSession::rescheduled).count());
+            totalTherapistPresent.addAndGet(batch.stream().filter(ReportSession::therapistPresent).count());
+            totalPatientPresent.addAndGet(batch.stream().filter(ReportSession::patientPresent).count());
+        }
+
+        Table generalSummary = createGeneralSummaryTable(reports.size(),
+                totalRescheduled.get(), totalTherapistPresent.get(), totalPatientPresent.get());
+        document.add(generalSummary);
+    }
+
     // Métodos públicos
-    public byte[] generateAllSessionsReportPdf(List<ReportSession> reports, Map<Long, Integer> planSessions) {
+    public byte[] generateAllSessionsReportPdf(List<ReportSession> reports,
+                                               Map<Long, Integer> planSessions) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        try (Document document = initializeDocument(outputStream, true)) {
+        try (Document document = initializeDocument(outputStream)) {
             document.add(createHeaderWithLogo("Reporte General de Sesiones"));
             document.add(new Paragraph("\n"));
 
-            // Agrupar sesiones por terapeuta
             Map<Long, List<ReportSession>> sessionsByTherapist = reports.stream()
                     .collect(Collectors.groupingBy(ReportSession::therapistId));
 
-            // Para cada terapeuta, crear su tabla y resumen
-            sessionsByTherapist.forEach((therapistId, therapistSessions) -> {
-                try {
-                    // Obtener nombre del terapeuta
-                    String therapistName = therapistSessions.get(0).therapistName();
+            List<Long> therapistIds = new ArrayList<>(sessionsByTherapist.keySet());
 
-                    // Agregar título de la sección del terapeuta
-                    document.add(new Paragraph(String.format("Terapeuta: %s", therapistName))
-                            .setBold()
-                            .setFontSize(14)
-                            .setTextAlignment(TextAlignment.LEFT));
-                    document.add(new Paragraph("\n"));
+            for (int i = 0; i < therapistIds.size(); i += BATCH_SIZE) {
+                int endIndex = Math.min(i + BATCH_SIZE, therapistIds.size());
+                List<Long> therapistBatch = therapistIds.subList(i, endIndex);
 
-                    // Crear y llenar tabla para este terapeuta
-                    Table therapistTable = createTherapistReportTable();
-                    therapistSessions.forEach(session ->
-                            addTherapistReportRow(therapistTable, session,
-                                    planSessions.getOrDefault(session.planId(), 0)));
-
-                    document.add(therapistTable);
-
-                    // Agregar resumen para este terapeuta
-                    document.add(createSummaryTable(therapistSessions, false));
-                    document.add(new Paragraph("\n\n")); // Espacio entre secciones de terapeutas
-
-                } catch (Exception e) {
-                    System.err.println("Error al generar sección del terapeuta: " + e.getMessage());
+                for (Long therapistId : therapistBatch) {
+                    List<ReportSession> therapistSessions = sessionsByTherapist.get(therapistId);
+                    processTherapistSection(document, therapistId, therapistSessions, planSessions);
                 }
-            });
+                document.flush();
+            }
 
-            // Agregar resumen general al final
-            document.add(new Paragraph("Resumen General")
-                    .setBold()
-                    .setFontSize(14)
-                    .setTextAlignment(TextAlignment.LEFT));
-
-            Table generalSummary = new Table(2);
-            generalSummary.setWidth(UnitValue.createPercentValue(100));
-
-            Cell leftCell = new Cell();
-            leftCell.setBorder(null);
-            leftCell.add(new Paragraph("Total General:").setBold().setFontSize(12));
-            leftCell.add(new Paragraph(String.format("Total de sesiones: %d", reports.size())));
-            leftCell.add(new Paragraph(String.format("Sesiones reprogramadas: %d",
-                    reports.stream().filter(ReportSession::rescheduled).count())));
-            leftCell.setTextAlignment(TextAlignment.LEFT);
-            generalSummary.addCell(leftCell);
-
-            Cell rightCell = new Cell();
-            rightCell.setBorder(null);
-            rightCell.add(new Paragraph("Asistencias Totales:").setBold().setFontSize(12));
-            rightCell.add(new Paragraph(String.format("Terapeutas: %d",
-                    reports.stream().filter(ReportSession::therapistPresent).count())));
-            rightCell.add(new Paragraph(String.format("Pacientes: %d",
-                    reports.stream().filter(ReportSession::patientPresent).count())));
-            rightCell.setTextAlignment(TextAlignment.RIGHT);
-            generalSummary.addCell(rightCell);
-
-            document.add(generalSummary);
-
+            addGeneralSummary(document, reports);
         } catch (Exception e) {
             throw new RuntimeException("Error al generar el PDF del reporte general", e);
         }
