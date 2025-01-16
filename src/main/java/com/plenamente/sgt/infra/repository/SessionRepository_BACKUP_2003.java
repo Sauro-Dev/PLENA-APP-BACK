@@ -45,8 +45,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     @Query("SELECT MAX(s.renewPlan) FROM Session s WHERE s.patient.idPatient = :patientId")
     Optional<Integer> findMaxRenewPlanByPatientId(Long patientId);
 
-    Optional<Session> findFirstByPatient_IdPatientOrderBySessionDateAsc(Long patientId);
-
+<<<<<<< HEAD
     @Query("SELECT s FROM Session s WHERE s.sessionDate BETWEEN :startDate AND :endDate ORDER BY s.sessionDate ASC")
     Page<Session> findBySessionDateBetweenOrderBySessionDateAsc(
             @Param("startDate") LocalDate startDate,
@@ -69,3 +68,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
             @Param("endDate") LocalDate endDate,
             Pageable pageable);
 }
+=======
+    Optional<Session> findFirstByPatient_IdPatientOrderBySessionDateAsc(Long patientId);
+}
+>>>>>>> feature/medicalHistoryV2

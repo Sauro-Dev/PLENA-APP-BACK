@@ -2,13 +2,9 @@ package com.plenamente.sgt.infra.repository;
 
 import com.plenamente.sgt.domain.entity.Session;
 
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -44,28 +40,4 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     @Query("SELECT MAX(s.renewPlan) FROM Session s WHERE s.patient.idPatient = :patientId")
     Optional<Integer> findMaxRenewPlanByPatientId(Long patientId);
-
-    Optional<Session> findFirstByPatient_IdPatientOrderBySessionDateAsc(Long patientId);
-
-    @Query("SELECT s FROM Session s WHERE s.sessionDate BETWEEN :startDate AND :endDate ORDER BY s.sessionDate ASC")
-    Page<Session> findBySessionDateBetweenOrderBySessionDateAsc(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            Pageable pageable);
-
-    @Query("SELECT s FROM Session s WHERE s.therapist.idUser = :therapistId " +
-            "AND s.sessionDate BETWEEN :startDate AND :endDate ORDER BY s.sessionDate ASC")
-    Page<Session> findByTherapistIdAndSessionDateBetweenOrderBySessionDateAsc(
-            @Param("therapistId") Long therapistId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            Pageable pageable);
-
-    @Query("SELECT s FROM Session s WHERE s.patient.idPatient = :patientId " +
-            "AND s.sessionDate BETWEEN :startDate AND :endDate ORDER BY s.sessionDate ASC")
-    Page<Session> findByPatientIdAndSessionDateBetweenOrderBySessionDateAsc(
-            @Param("patientId") Long patientId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            Pageable pageable);
 }

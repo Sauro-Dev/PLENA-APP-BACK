@@ -12,7 +12,10 @@ services:
       SPRING_DATA_REDIS_HOST: redis_sgt
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_TIMEOUT: 60000
-    restart: always
+      NGINX_STORAGE_PATH: /usr/share/nginx/html/static
+      NGINX_SERVER_URL: http://nginx_sgt
+    volumes:
+        - static_files:/usr/share/nginx/html/static
     depends_on:
       sgt_db:
         condition: service_healthy
@@ -47,5 +50,27 @@ services:
       timeout: 3s
       retries: 5
 
+  nginx_sgt:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "81:80"  # Expone 81 externamente, pero usa 80 internamente
+    volumes:
+      - static_files:/usr/share/nginx/html/static
+    environment:
+      - NGINX_UID=1000
+      - NGINX_GID=1000
+    depends_on:
+      - app_sgt
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]  # Internamente sigue siendo 80
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
+  static_files:
+    driver: local
   redis_data:
