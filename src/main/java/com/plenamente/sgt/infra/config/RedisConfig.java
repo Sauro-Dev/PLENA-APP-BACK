@@ -1,4 +1,5 @@
 package com.plenamente.sgt.infra.config;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
@@ -9,8 +10,11 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import java.time.Duration;
+
 @Configuration
 public class RedisConfig {
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -28,16 +32,18 @@ public class RedisConfig {
         template.afterPropertiesSet();
         return template;
     }
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         LoggingRedisSerializer serializer = new LoggingRedisSerializer(objectMapper);
+
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(30))
                 .disableCachingNullValues()
                 .serializeKeysWith(
                         org.springframework.data.redis.serializer.RedisSerializationContext
-                                //.entryTtl(Duration.ofMinutes(30))
                                 .SerializationPair
                                 .fromSerializer(new StringRedisSerializer())
                 )
@@ -46,6 +52,7 @@ public class RedisConfig {
                                 .SerializationPair
                                 .fromSerializer(serializer)
                 );
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();

@@ -8,7 +8,7 @@ import com.plenamente.sgt.domain.entity.Session;
 import com.plenamente.sgt.infra.exception.ResourceNotFoundException;
 import com.plenamente.sgt.infra.repository.PlanRepository;
 import com.plenamente.sgt.service.SessionService;
-import com.plenamente.sgt.service.impl.PdfGenerationService;
+import com.plenamente.sgt.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;

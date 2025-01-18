@@ -44,8 +44,10 @@ import java.util.List;
         // Obtener cantidad de reportes existentes
         List<Report> existingReports = reportRepository.findByMedicalHistoryIdMedicalHistory(medicalHistoryId);
 
+        int allowedReports = treatmentMonths / 3;
+
         // Si no hay reportes, se puede subir
-        if (existingReports.isEmpty()) {
+        if (existingReports.size() < allowedReports) {
             return true;
         }
 
@@ -54,7 +56,6 @@ import java.util.List;
             return false;
         }
 
-        // Para el segundo reporte, verificar que hayan pasado 3 meses desde el último
         Report lastReport = existingReports.get(0);
         int monthsSinceLastReport = (int) ChronoUnit.MONTHS.between(
                 YearMonth.from(lastReport.getUploadAt()),

@@ -41,8 +41,8 @@ public class ReportServiceImpl implements ReportService {
     private final TreatmentService treatmentService;
     private final ModelMapper modelMapper;
 
-    @Override
     @CacheEvict(cacheNames = "reports", key = "'medical_history_' + #medicalHistoryId")
+    @Override
     public ReportDto uploadReport(Long patientId, Long medicalHistoryId, MultipartFile file) {
         try {
             if (!treatmentService.canUploadReport(patientId, medicalHistoryId)) {
@@ -91,8 +91,9 @@ public class ReportServiceImpl implements ReportService {
         return dto;
     }
 
+
     @Override
-    @CacheEvict(key = "#reportId")
+    @CacheEvict(cacheNames = "reports", allEntries = true)
     public void deleteReport(Long reportId) {
         try {
             Report report = reportRepository.findById(reportId)

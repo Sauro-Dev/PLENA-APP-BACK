@@ -1,4 +1,4 @@
-package com.plenamente.sgt.service.impl;
+package com.plenamente.sgt.service;
 
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.geom.PageSize;
