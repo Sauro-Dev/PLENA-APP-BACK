@@ -63,7 +63,6 @@ public class MaterialController {
         return new ResponseEntity<>(unassignedMaterial, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/unassigned")
     public ResponseEntity<List<RegisterMaterial>> getUnassignedMaterials() {
         List<RegisterMaterial> unassignedMaterials = materialService.getUnassignedMaterials();
