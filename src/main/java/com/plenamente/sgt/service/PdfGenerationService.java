@@ -102,7 +102,7 @@ public class PdfGenerationService {
         addCenteredCell(table, report.sessionDate().format(DATE_FORMATTER));
         addCenteredCell(table, report.startTime().format(TIME_FORMATTER));
         addCenteredCell(table, isPatientReport ? report.therapistName() : report.patientName());
-        addCenteredCell(table, String.valueOf(numSessions * 4));
+        addCenteredCell(table, getSessionPlanType(numSessions));
         addCenteredCell(table, report.roomName());
         addCenteredCell(table, report.patientPresent() ? "Sí" : "No");
         addCenteredCell(table, report.therapistPresent() ? "Sí" : "No");
@@ -118,7 +118,7 @@ public class PdfGenerationService {
         addCenteredHeaderCell(table, "Fecha");
         addCenteredHeaderCell(table, "Hora Inicio");
         addCenteredHeaderCell(table, isPatientReport ? "Terapeuta" : "Paciente");
-        addCenteredHeaderCell(table, "Sesiones/Mes");
+        addCenteredHeaderCell(table, "Plan");
         addCenteredHeaderCell(table, "Sala");
         addCenteredHeaderCell(table, "Asist. Paciente");
         addCenteredHeaderCell(table, "Asist. Terapeuta");
@@ -262,6 +262,18 @@ public class PdfGenerationService {
         Table generalSummary = createGeneralSummaryTable(reports.size(),
                 totalRescheduled.get(), totalTherapistPresent.get(), totalPatientPresent.get());
         document.add(generalSummary);
+    }
+
+    private String getSessionPlanType(int weeklySessionsCount) {
+        return switch (weeklySessionsCount) {
+            case 1 -> "Plan A";
+            case 2 -> "Plan B";
+            case 3 -> "Plan C";
+            case 4 -> "Plan D";
+            case 5 -> "Plan E";
+            case 6 -> "Plan F";
+            default -> "N/A";
+        };
     }
 
     // Métodos públicos

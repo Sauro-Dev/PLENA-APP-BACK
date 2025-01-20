@@ -13,6 +13,6 @@ public record UpdateSession(
         @NotNull LocalTime startTime,
         @NotNull Long therapistId,
         @NotNull Long roomId,
-        @NotBlank @Length(max = 20) String reason
+        @NotBlank @Length(max = 30) String reason
 ) {
 }

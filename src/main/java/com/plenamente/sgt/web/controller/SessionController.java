@@ -186,14 +186,21 @@ public class SessionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         List<ReportSession> reports;
+        DateRange dateRange;
+
         if (startDate != null && endDate != null) {
             reports = sessionService.getSessionsReportByTherapistAndDateRange(therapistId, startDate, endDate);
+            dateRange = new DateRange(startDate, endDate);
         } else {
-            DateRange previousMonth = getPreviousMonthRange();
+            dateRange = getPreviousMonthRange();
             reports = sessionService.getSessionsReportByTherapistAndDateRange(
                     therapistId,
-                    previousMonth.startDate(),
-                    previousMonth.endDate());
+                    dateRange.startDate(),
+                    dateRange.endDate());
+        }
+
+        if (reports.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontraron sesiones para el terapeuta");
         }
 
         Map<Long, Integer> planSessions = reports.stream()
@@ -208,21 +215,17 @@ public class SessionController {
 
         byte[] pdfData = pdfGenerationService.generateTherapistReportPdf(reports, planSessions);
 
-        String filename;
-        if (startDate != null && endDate != null) {
-            filename = String.format("reporte_sesiones_terapeuta_%d_%s_%s.pdf",
-                    therapistId,
-                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
-                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
-        } else {
-            DateRange range = getPreviousMonthRange();
-            filename = String.format("reporte_sesiones_terapeuta_%d_%s.pdf",
-                    therapistId,
-                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
-        }
+        String therapistName = reports.get(0).therapistName()
+                .replaceAll("\\s+", "_")
+                .toLowerCase();
+
+        String filename = String.format("reporte_sesiones_terapeuta_%s_%s_%s.pdf",
+                therapistName,
+                dateRange.startDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                dateRange.endDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Disposition", String.format("attachment; filename=\"%s\"", filename))
                 .header("Content-Type", "application/pdf")
                 .body(pdfData);
     }
@@ -234,14 +237,21 @@ public class SessionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         List<ReportSession> reports;
+        DateRange dateRange;
+
         if (startDate != null && endDate != null) {
             reports = sessionService.getSessionsReportByPatientAndDateRange(patientId, startDate, endDate);
+            dateRange = new DateRange(startDate, endDate);
         } else {
-            DateRange previousMonth = getPreviousMonthRange();
+            dateRange = getPreviousMonthRange();
             reports = sessionService.getSessionsReportByPatientAndDateRange(
                     patientId,
-                    previousMonth.startDate(),
-                    previousMonth.endDate());
+                    dateRange.startDate(),
+                    dateRange.endDate());
+        }
+
+        if (reports.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontraron sesiones para el paciente");
         }
 
         Map<Long, Integer> planSessions = reports.stream()
@@ -256,21 +266,17 @@ public class SessionController {
 
         byte[] pdfData = pdfGenerationService.generatePatientReportPdf(reports, planSessions);
 
-        String filename;
-        if (startDate != null && endDate != null) {
-            filename = String.format("reporte_sesiones_paciente_%d_%s_%s.pdf",
-                    patientId,
-                    startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
-                    endDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
-        } else {
-            DateRange range = getPreviousMonthRange();
-            filename = String.format("reporte_sesiones_paciente_%d_%s.pdf",
-                    patientId,
-                    range.startDate().format(DateTimeFormatter.ofPattern("yyyyMM")));
-        }
+        String patientName = reports.get(0).patientName()
+                .replaceAll("\\s+", "_")
+                .toLowerCase();
+
+        String filename = String.format("reporte_sesiones_paciente_%s_%s_%s.pdf",
+                patientName,
+                dateRange.startDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                dateRange.endDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Disposition", String.format("attachment; filename=\"%s\"", filename))
                 .header("Content-Type", "application/pdf")
                 .body(pdfData);
     }
