@@ -39,6 +39,14 @@ public class PatientServiceImpl implements PatientService {
     private final SessionRepository sessionRepository;
 
     public Patient createPatient(RegisterPatient registerPatient) {
+        long uniqueDatesCount = registerPatient.firstWeekDates().stream()
+                .distinct()
+                .count();
+
+        if (uniqueDatesCount != registerPatient.firstWeekDates().size()) {
+            throw new IllegalArgumentException("No se pueden programar múltiples sesiones en el mismo día.");
+        }
+
         if (patientRepository.existsByDni(registerPatient.dni())) {
             throw new IllegalArgumentException("El DNI ya está registrado en el sistema.");
         }
@@ -166,6 +174,14 @@ public class PatientServiceImpl implements PatientService {
     @Transactional
     @Override
     public Patient renewPlan(RenewPlanDto renewPlanDto) {
+        long uniqueDatesCount = renewPlanDto.firstWeekDates().stream()
+                .distinct()
+                .count();
+
+        if (uniqueDatesCount != renewPlanDto.firstWeekDates().size()) {
+            throw new IllegalArgumentException("No se pueden programar múltiples sesiones en el mismo día.");
+        }
+
         Patient patient = patientRepository.findById(renewPlanDto.patientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado."));
 
