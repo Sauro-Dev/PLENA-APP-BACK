@@ -1,4 +1,4 @@
-package com.plenamente.sgt.config;
+package com.plenamente.sgt.infra.config;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;

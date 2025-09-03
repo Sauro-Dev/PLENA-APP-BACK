@@ -19,6 +19,7 @@ public class MaterialController {
 
     private final MaterialService materialService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<Material> registerMaterial(@RequestBody RegisterMaterial dto) {
         Material newMaterial = materialService.registerMaterial(dto);
@@ -37,6 +38,7 @@ public class MaterialController {
         return new ResponseEntity<>(material, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<Material> updateMaterial(
             @PathVariable String id,
@@ -45,6 +47,7 @@ public class MaterialController {
         return new ResponseEntity<>(updated, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{materialId}/assign/{roomId}")
     public ResponseEntity<Material> assignMaterialToRoom(
             @PathVariable String materialId,
@@ -53,6 +56,7 @@ public class MaterialController {
         return new ResponseEntity<>(assignedMaterial, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{materialId}/unassign")
     public ResponseEntity<Material> unassignMaterialFromRoom(@PathVariable String materialId) {
         Material unassignedMaterial = materialService.unassignMaterialFromRoom(materialId);
@@ -64,6 +68,8 @@ public class MaterialController {
         List<RegisterMaterial> unassignedMaterials = materialService.getUnassignedMaterials();
         return new ResponseEntity<>(unassignedMaterials, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{materialId}")
     public ResponseEntity<Void> deleteMaterial(@PathVariable String materialId) {
         materialService.deleteMaterial(materialId);

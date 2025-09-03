@@ -23,5 +23,4 @@ public record RegisterUser(
         Double paymentSession,  // campo opcional para Therapist
         Double paymentMonthly  // campo opcional para Secretary
 ) {
-
 }

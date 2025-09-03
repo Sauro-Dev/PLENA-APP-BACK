@@ -1,5 +1,6 @@
 package com.plenamente.sgt.web.controller;
 
+import com.plenamente.sgt.domain.dto.RoomDto.DisabledRoom;
 import com.plenamente.sgt.domain.entity.Material;
 import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.service.RoomService;
@@ -20,6 +21,7 @@ public class RoomController {
     @Autowired
     private RoomService roomService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<Room> registerRoom(@RequestBody Room room) {
         Room newRoom = roomService.registerRoom(room);
@@ -50,16 +52,34 @@ public class RoomController {
         return ResponseEntity.ok(room);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update/{roomId}")
     public ResponseEntity<Room> updateRoom(@PathVariable Long roomId, @RequestBody Room roomUpdated) {
-        Room room = roomService.updateRoom(roomId,roomUpdated);
+        Room room = roomService.updateRoom(roomId, roomUpdated);
         return ResponseEntity.ok(room);
     }
 
-    @DeleteMapping("/delete/{roomId}")
-    public ResponseEntity<String> deleteRoom(@PathVariable Long roomId) {
-        roomService.deleteRoom(roomId);
-        String message = "La sala con ID " + roomId + " fue eliminada exitosamente.";
-        return ResponseEntity.ok(message);
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/enable/{roomId}")
+    public ResponseEntity<String> enableRoom(@PathVariable Long roomId) {
+        roomService.enableRoom(roomId);
+        return ResponseEntity.ok("Sala con ID " + roomId + " reactivada correctamente.");
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/disable/{roomId}")
+    public ResponseEntity<String> disableRoom(@PathVariable Long roomId) {
+        Room room = roomService.getRoomById(roomId);
+        if (room == null) {
+            throw new IllegalArgumentException("Sala no encontrada con ID: " + roomId);
+        }
+        roomService.disableRoom(roomId);
+        return ResponseEntity.ok("Sala con ID " + roomId + " deshabilitada correctamente.");
+    }
+
+    @GetMapping("/disabled")
+    public ResponseEntity<List<DisabledRoom>> getDisabledRooms() {
+        List<DisabledRoom> disabledRooms = roomService.getDisabledRooms();
+        return ResponseEntity.ok(disabledRooms);
     }
 }

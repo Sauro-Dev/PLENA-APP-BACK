@@ -1,69 +1,52 @@
 package com.plenamente.sgt.service.impl;
 
 import com.plenamente.sgt.domain.dto.MedicalHistoryDto.ListMedicalHistory;
-import com.plenamente.sgt.domain.dto.MedicalHistoryDto.RegisterMedicalHistory;
-import com.plenamente.sgt.domain.entity.EvaluationDocument;
+import com.plenamente.sgt.domain.dto.ReportDto.ReportSummaryDTO;
 import com.plenamente.sgt.domain.entity.MedicalHistory;
-import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.domain.entity.Report;
-import com.plenamente.sgt.infra.repository.EvaluationDocumentRepository;
 import com.plenamente.sgt.infra.repository.MedicalHistoryRepository;
-import com.plenamente.sgt.infra.repository.PatientRepository;
-import com.plenamente.sgt.infra.repository.ReportRepository;
 import com.plenamente.sgt.service.MedicalHistoryService;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@NoArgsConstructor
+@RequiredArgsConstructor
+@Slf4j
 public class MedicalHistoryServiceImpl implements MedicalHistoryService {
-    @Autowired
-    private MedicalHistoryRepository medicalHistoryRepository;
-    @Autowired
-    private PatientRepository patientRepository;
-    @Autowired
-    private ReportRepository reportRepository;
-    @Autowired
-    private EvaluationDocumentRepository evaluationDocumentRepository;
+
+    private final MedicalHistoryRepository medicalHistoryRepository;
 
     @Override
-    public MedicalHistory createMedicalHistory(RegisterMedicalHistory registerMedicalHistory) {
-        MedicalHistory medicalHistory = new MedicalHistory();
-        Patient patient = patientRepository.findById(registerMedicalHistory.idPatient())
-                .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado con id: " + registerMedicalHistory.idPatient()));
-        medicalHistory.setPatient(patient);
-        medicalHistory.setName(registerMedicalHistory.name());
-        return medicalHistoryRepository.save(medicalHistory);
+    @Transactional(readOnly = true)
+    public List<ListMedicalHistory> getReport_DocumentByPatientId(Long patientId) {
+        List<MedicalHistory> histories = medicalHistoryRepository.findByPatient_IdPatient(patientId);
+
+        return histories.stream()
+                .map(history -> new ListMedicalHistory(
+                        history.getIdMedicalHistory(),
+                        history.getReports().isEmpty() ? null : mapToReportDTO(history.getReports().get(0)),
+                        history.getEvaluationDocuments().isEmpty() ? null : history.getEvaluationDocuments().get(0).getName(),
+                        history.getEvaluationDocuments().isEmpty() ? null : history.getEvaluationDocuments().get(0).getDescription(),
+                        history.getEvaluationDocuments().isEmpty() ? null : history.getEvaluationDocuments().get(0).getContentType(),
+                        history.getPatient().getName()
+                ))
+                .collect(Collectors.toList());
     }
-    @Override
-    public List<ListMedicalHistory> getReport_DocumentByPatientId(Long id) {
-        List<MedicalHistory> medicalHistories = medicalHistoryRepository.findByPatient_IdPatient(id);
-        List<ListMedicalHistory> listMedicalHistories = new ArrayList<>();
 
-        for (MedicalHistory medicalHistory : medicalHistories) {
-            List<Report> reports = reportRepository.findByMedicalHistory_IdMedicalHistory(id);
-            List<EvaluationDocument> documents = evaluationDocumentRepository.findByMedicalHistory_IdMedicalHistory(id);
-
-            for (Report report : reports) {
-                for (EvaluationDocument document : documents) {
-                    ListMedicalHistory listMedicalHistory = new ListMedicalHistory(
-                            report,
-                            document.getName(),
-                            document.getDescription(),
-                            document.getDocumentType(),
-                            document.getArchive(),
-                            medicalHistory.getName(),
-                            medicalHistory.getIdMedicalHistory()
-                    );
-                    listMedicalHistories.add(listMedicalHistory);
-                }
-            }
-        }
-        return listMedicalHistories;
+    private ReportSummaryDTO mapToReportDTO(Report report) {
+        return new ReportSummaryDTO(
+                report.getIdReport(),
+                report.getFileUrl(),
+                report.getFileName(),
+                report.getContentType(),
+                report.getFileSize(),
+                report.getUploadAt(),
+                report.getTreatmentMonth()
+        );
     }
 }

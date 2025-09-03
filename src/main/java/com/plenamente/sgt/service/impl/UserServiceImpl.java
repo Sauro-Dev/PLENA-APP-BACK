@@ -1,12 +1,7 @@
 package com.plenamente.sgt.service.impl;
 
-import com.plenamente.sgt.domain.dto.UserDto.ListUser;
-import com.plenamente.sgt.domain.dto.UserDto.MyProfile;
-import com.plenamente.sgt.domain.dto.UserDto.RegisterUser;
-import com.plenamente.sgt.domain.entity.AdminTherapist;
-import com.plenamente.sgt.domain.entity.Secretary;
-import com.plenamente.sgt.domain.entity.Therapist;
-import com.plenamente.sgt.domain.entity.User;
+import com.plenamente.sgt.domain.dto.UserDto.*;
+import com.plenamente.sgt.domain.entity.*;
 import com.plenamente.sgt.infra.repository.UserRepository;
 import com.plenamente.sgt.infra.security.JwtService;
 import com.plenamente.sgt.infra.security.LoginRequest;
@@ -26,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 @RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService {
@@ -36,10 +32,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public TokenResponse login(LoginRequest request) {
-        // Limpia el contexto de seguridad antes de autenticar
         SecurityContextHolder.clearContext();
 
-        // Autentica al usuario
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -47,29 +41,44 @@ public class UserServiceImpl implements UserService {
                 )
         );
 
-        // Establece el usuario autenticado en el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Recupera el usuario desde el repositorio utilizando el username del request
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + request.getUsername()));
 
-        // Verifica si el usuario está habilitado
         if (!user.isEnabled()) {
             throw new DisabledException("Este usuario ha sido deshabilitado.");
         }
 
-        // Genera el token para el usuario autenticado
         String token = jwtService.getToken((UserDetails) authentication.getPrincipal(), user);
+
+
+        boolean isFirstLogin = user.isFirstLogin();
+
+        if (isFirstLogin) {
+            user.setFirstLogin(false);
+            userRepository.save(user);
+        }
 
         return TokenResponse.builder()
                 .token(token)
+                .firstLogin(isFirstLogin)
                 .build();
     }
 
     @Override
     public TokenResponse addUser(RegisterUser data) {
+        if (userRepository.existsByUsername(data.username())) {
+            throw new IllegalArgumentException("El username ya está en uso.");
+        }
+        if (userRepository.existsByEmail(data.email())) {
+            throw new IllegalArgumentException("El email ya está en uso.");
+        }
+        if (userRepository.existsByDni(data.dni())) {
+            throw new IllegalArgumentException("El DNI ya está en uso.");
+        }
         boolean isAlsoTherapist = data.paymentSession() != null;
+
         User user = UserFactory.createUser(data.role(), isAlsoTherapist);
 
         user.setName(data.name());
@@ -85,11 +94,26 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(data.password()));
         user.setRol(data.role());
 
-        // Lógica adicional para roles específicos
         if (user instanceof Therapist) {
             Double paymentSession = data.paymentSession();
             if (paymentSession != null) {
                 ((Therapist) user).setPaymentSession(paymentSession);
+            } else {
+                throw new IllegalArgumentException("El campo paymentSession es obligatorio para Terapeuta.");
+            }
+        } else if (user instanceof Secretary secretary) {
+            Double paymentMonthly = data.paymentMonthly();
+            if (paymentMonthly != null) {
+                secretary.setPaymentMonthly(paymentMonthly);
+            } else {
+                throw new IllegalArgumentException("El campo paymentMonthly es obligatorio para Secretario.");
+            }
+        } else if (user instanceof AdminTherapist adminTherapist) {
+            Double paymentSession = data.paymentSession();
+            if (paymentSession != null) {
+                adminTherapist.setPaymentSession(paymentSession);
+            } else {
+                throw new IllegalArgumentException("El campo paymentSession es obligatorio para AdminTherapist.");
             }
         }
 
@@ -115,10 +139,35 @@ public class UserServiceImpl implements UserService {
                         user.getDni(),
                         user.getPhone(),
                         user.getPhoneBackup(),
-                        user.getAddress()  // nuevo campo
+                        user.getAddress(),
+                        user.getBirthdate(),
+                        user.isEnabled()
                 ))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<ListUser> getAllTherapists() {
+        return userRepository.findByRole(Rol.THERAPIST)
+                .stream()
+                .map(therapist -> new ListUser(
+                        therapist.getIdUser(),
+                        therapist.getUsername(),
+                        therapist.getName(),
+                        therapist.getEmail(),
+                        therapist.getRol(),
+                        therapist.getPaternalSurname(),
+                        therapist.getMaternalSurname(),
+                        therapist.getDni(),
+                        therapist.getPhone(),
+                        therapist.getPhoneBackup(),
+                        therapist.getAddress(),
+                        therapist.getBirthdate(),
+                        therapist.isEnabled()
+                ))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public ListUser getUserById(Long id) {
         User user = userRepository.findById(id)
@@ -135,8 +184,33 @@ public class UserServiceImpl implements UserService {
                 user.getDni(),
                 user.getPhone(),
                 user.getPhoneBackup(),
-                user.getAddress()
+                user.getAddress(),
+                user.getBirthdate(),
+                user.isEnabled()
         );
+    }
+
+    @Override
+    public void updateUserByAdmin(Long id, UpdateUserDto updateUserDto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con id: " + id));
+
+        user.setUsername(updateUserDto.username());
+        if (updateUserDto.password() != null && !updateUserDto.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(updateUserDto.password()));
+        }
+        user.setName(updateUserDto.name());
+        user.setPaternalSurname(updateUserDto.paternalSurname());
+        user.setMaternalSurname(updateUserDto.maternalSurname());
+        user.setDni(updateUserDto.dni());
+        user.setEmail(updateUserDto.email());
+        user.setAddress(updateUserDto.address());
+        user.setPhone(updateUserDto.phone());
+        user.setPhoneBackup(updateUserDto.phoneBackup());
+        user.setBirthdate(updateUserDto.birthdate());
+        user.setEnabled(updateUserDto.enabled());
+
+        userRepository.save(user);
     }
 
     @Override
@@ -144,6 +218,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
         return new MyProfile(
+                user.getUsername(),
                 user.getName(),
                 user.getPaternalSurname(),
                 user.getMaternalSurname(),
@@ -152,7 +227,9 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
+                user.getBirthdate(),
                 user.getRol()
+
         );
     }
 
@@ -161,7 +238,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
 
-        // Actualizar datos del usuario
+        user.setUsername(myProfileDto.username());
         user.setName(myProfileDto.name());
         user.setPaternalSurname(myProfileDto.paternalSurname());
         user.setMaternalSurname(myProfileDto.maternalSurname());
@@ -170,10 +247,13 @@ public class UserServiceImpl implements UserService {
         user.setPhone(myProfileDto.phone());
         user.setPhoneBackup(myProfileDto.phoneBackup());
         user.setEmail(myProfileDto.email());
+        user.setBirthdate(myProfileDto.birthdate());
 
-        userRepository.save(user); // Guardar cambios
+
+        userRepository.save(user);
 
         return new MyProfile(
+                user.getUsername(),
                 user.getName(),
                 user.getPaternalSurname(),
                 user.getMaternalSurname(),
@@ -182,7 +262,60 @@ public class UserServiceImpl implements UserService {
                 user.getPhone(),
                 user.getPhoneBackup(),
                 user.getEmail(),
+                user.getBirthdate(),
                 user.getRol()
         );
+    }
+
+    public void updateCredentials(String currentUsername, CredentialsUpdate credentialsUpdate) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + currentUsername));
+
+        user.setUsername(credentialsUpdate.username());
+        user.setPassword(passwordEncoder.encode(credentialsUpdate.newPassword()));
+
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updatePassword(String username, PasswordUpdateRequest passwordUpdateRequest) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
+
+        boolean matches = passwordEncoder.matches(passwordUpdateRequest.currentPassword(), user.getPassword());
+        if (!matches) {
+            throw new IllegalArgumentException("La contraseña actual no es válida.");
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordUpdateRequest.newPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByUsername(request.username())
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + request.username()));
+
+        if (!user.getDni().equals(request.dni())) {
+            throw new IllegalArgumentException("El DNI proporcionado no coincide con el usuario.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public boolean existsByDni(String dni) {
+        return userRepository.existsByDni(dni);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    public List<User> getAllTherapyCapableUsers() {
+        return userRepository.findByIsTherapistTrue();
     }
 }

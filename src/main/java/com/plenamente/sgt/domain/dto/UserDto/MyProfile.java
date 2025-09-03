@@ -7,7 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 
+import java.time.LocalDate;
+
 public record MyProfile(
+        @NotBlank @Length(max = 20) String username,
         @NotBlank @Length(max = 100) String name,
         @Length(max = 100) String paternalSurname,
         @Length(max = 100) String maternalSurname,
@@ -16,5 +19,6 @@ public record MyProfile(
         @NotBlank @Length(max = 9) String phone,
         @Length(max = 9) String phoneBackup,
         @NotBlank @Email String email,
-        Rol role // Opcional para mostrar el rol
+        LocalDate birthdate,
+        Rol role
 ) {}

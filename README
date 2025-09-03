@@ -1,0 +1,203 @@
+# Sistema de Gestión Terapéutica
+
+## 📋 Descripción
+Sistema integral de gestión diseñado para centros de salud y clínicas terapéuticas que permite administrar de manera eficiente:
+- **Inventario** de equipos y suministros médicos
+- **Horarios** y citas de pacientes y personal
+- **Gestión de pacientes** con historiales médicos
+- **Administración de personal terapéutico**
+
+## 🛠️ Tecnologías Utilizadas
+
+### Backend
+- **Java 17** - Plataforma de desarrollo principal
+- **Jakarta EE** - Framework empresarial
+- **Spring MVC** - Framework web para arquitectura MVC
+- **Spring Data JPA** - Persistencia de datos
+- **Lombok** - Reducción de código boilerplate
+- **Maven** - Gestión de dependencias y construcción
+
+### Infraestructura
+- **Docker** - Containerización de la aplicación
+- **Docker Compose** - Orquestación de contenedores
+- **Nginx** - Servidor web y proxy reverso
+
+## 📁 Estructura del Proyecto
+
+```
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   └── resources/
+│   └── test/
+├── nginx/              # Configuración de Nginx
+├── docker-compose.yml  # Configuración de contenedores
+├── Dockerfile         # Imagen Docker de la aplicación
+└── pom.xml           # Configuración Maven
+```
+
+## 🚀 Características Principales
+
+### 📦 Gestión de Inventario
+- Control de stock de equipos médicos y suministros
+- Alertas de stock bajo
+- Historial de movimientos de inventario
+- Categorización de productos
+
+### 📅 Sistema de Horarios
+- Programación de citas y sesiones terapéuticas
+- Gestión de disponibilidad del personal
+- Calendario integrado para visualización
+- Notificaciones automáticas
+
+### 👥 Gestión de Pacientes
+- Registro completo de datos personales
+- Historiales médicos detallados
+- Seguimiento de tratamientos
+- Sistema de citas y recordatorios
+
+### 👨‍⚕️ Administración de Personal
+- Gestión de perfiles de terapeutas
+- Control de horarios laborales
+- Asignación de pacientes
+- Registro de especializaciones
+
+## 🔧 Instalación y Configuración
+
+### Prerrequisitos
+- Java 17 o superior
+- Maven 3.6+
+- Docker y Docker Compose
+- Base de datos (PostgreSQL/MySQL recomendado)
+
+### Instalación Local
+
+1. **Clonar el repositorio**
+```bash
+git clone <repository-url>
+cd sistema-gestion-terapeutica
+```
+
+2. **Configurar base de datos**
+```bash
+# Editar src/main/resources/application.properties
+# Configurar conexión a base de datos
+```
+
+3. **Compilar proyecto**
+```bash
+./mvnw clean install
+```
+
+4. **Ejecutar aplicación**
+```bash
+./mvnw spring-boot:run
+```
+
+### Instalación con Docker
+
+1. **Construir y ejecutar con Docker Compose**
+```bash
+docker-compose up -d
+```
+
+2. **Acceder a la aplicación**
+- URL: `http://localhost:8080`
+
+## 🔐 Configuración
+
+### Variables de Entorno
+```bash
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=terapeutica_db
+DB_USERNAME=admin
+DB_PASSWORD=password
+
+# Aplicación
+APP_PORT=8080
+APP_PROFILE=production
+```
+
+### Configuración de Nginx
+El servidor Nginx está configurado como proxy reverso para:
+- Balanceo de carga
+- Compresión de respuestas
+- Manejo de archivos estáticos
+- SSL/TLS (si está configurado)
+
+## 📊 Base de Datos
+
+### Entidades Principales
+- **Pacientes**: Datos personales, contacto, historial médico
+- **Personal**: Terapeutas, especialistas, administrativos
+- **Inventario**: Productos, categorías, stock
+- **Horarios**: Citas, sesiones, disponibilidad
+- **Tratamientos**: Planes terapéuticos, progreso
+
+## 🔒 Seguridad
+- Autenticación basada en roles
+- Encriptación de datos sensibles
+- Logs de auditoría
+- Protección CSRF
+- Validación de entrada de datos
+
+## 📈 Monitoreo y Logs
+- Logs estructurados con SLF4J
+- Métricas de rendimiento
+- Monitoreo de salud de la aplicación
+- Alertas automáticas
+
+## 🧪 Testing
+```bash
+# Ejecutar tests unitarios
+./mvnw test
+
+# Ejecutar tests de integración
+./mvnw verify
+```
+
+## 📚 API Documentation
+La documentación de la API REST está disponible en:
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI Spec: `http://localhost:8080/v3/api-docs`
+
+## 🚀 Despliegue
+
+### Producción
+1. Configurar variables de entorno de producción
+2. Generar JAR ejecutable: `./mvnw clean package`
+3. Desplegar en servidor de aplicaciones o contenedor Docker
+
+### CI/CD
+El proyecto incluye configuración para:
+- GitHub Actions / GitLab CI
+- Despliegue automático
+- Tests automatizados
+
+## 👥 Contribución
+1. Fork del proyecto
+2. Crear rama para nueva funcionalidad (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit de cambios (`git commit -am 'Añadir nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
+
+## 📝 Licencia
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 📞 Contacto y Soporte
+- **Desarrollador**: [Tu Nombre]
+- **Email**: [tu-email@dominio.com]
+- **Issues**: [Enlace al sistema de issues del repositorio]
+
+## 📋 Roadmap
+- [ ] Integración con sistemas de facturación
+- [ ] App móvil para pacientes
+- [ ] Integración con dispositivos IoT
+- [ ] Sistema de reportes avanzados
+- [ ] Telemedicina integrada
+
+---
+⚡ **Desarrollado con Java 17 + Jakarta EE + Spring Framework**

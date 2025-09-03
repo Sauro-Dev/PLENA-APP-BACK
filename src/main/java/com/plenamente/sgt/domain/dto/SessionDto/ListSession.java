@@ -1,17 +1,20 @@
 package com.plenamente.sgt.domain.dto.SessionDto;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
-public record ListSession(
+public record   ListSession(
         Long idSession,
+        Long therapistId,
+        Long roomId,
         LocalDate sessionDate,
-        LocalTime startTime,
-        LocalTime endTime,
+        String startTime,
+        String endTime,
         String patientName,
         String therapistName,
         String roomName,
         boolean rescheduled,
         boolean therapistPresent,
-        boolean patientPresent
-) {}
+        boolean patientPresent,
+        String reason
+) {
+}

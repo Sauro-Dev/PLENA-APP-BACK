@@ -15,4 +15,6 @@ public class Plan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPlan;
     private Integer numOfSessions;
+    private Integer weeks;
+
 }

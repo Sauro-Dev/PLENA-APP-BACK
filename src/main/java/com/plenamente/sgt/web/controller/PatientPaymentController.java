@@ -5,6 +5,7 @@ import com.plenamente.sgt.domain.entity.PatientPayment;
 import com.plenamente.sgt.service.PatientPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,11 +16,14 @@ public class PatientPaymentController {
     private final PatientPaymentService patientPaymentService;
 
     //Registrar el pago del paciente
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @PostMapping("/register")
     public ResponseEntity<PatientPayment> registerPatientPayment(@RequestBody PatientPaymentDTO patientPaymentDTO){
         return ResponseEntity.ok(patientPaymentService.createPatientPayment(patientPaymentDTO));
     }
+
     //Buscar pago del paciente por el id
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @GetMapping("/select/{id}")
     public ResponseEntity<PatientPaymentDTO> getPatientPaymentById(@PathVariable Long id){
         PatientPaymentDTO patientPayment = patientPaymentService.getPatientPaymentId(id);

@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  app_sgt:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:mysql://sgt_db:3306/sgt?createDatabaseIfNotExist=true&serverTimezone=UTC
+      DB_USER_NAME: root
+      DB_PASSWORD: root
+      SPRING_DATA_REDIS_HOST: redis_sgt
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_TIMEOUT: 60000
+      NGINX_STORAGE_PATH: /usr/share/nginx/html/static
+      NGINX_SERVER_URL: http://nginx_sgt
+    volumes:
+        - static_files:/usr/share/nginx/html/static
+    depends_on:
+      sgt_db:
+        condition: service_healthy
+      redis_sgt:
+        condition: service_started
+
+  sgt_db:
+    image: mysql:8.0.36
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: sgt
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  redis_sgt:
+    image: redis:6.2
+    ports:
+      - "6380:6379"
+    command: redis-server --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nginx_sgt:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "81:80"  # Expone 81 externamente, pero usa 80 internamente
+    volumes:
+      - static_files:/usr/share/nginx/html/static
+    environment:
+      - NGINX_UID=1000
+      - NGINX_GID=1000
+    depends_on:
+      - app_sgt
+    restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]  # Internamente sigue siendo 80
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  static_files:
+    driver: local
+  redis_data:

@@ -18,13 +18,15 @@ public class Session {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idSession;
 
-    private LocalDate sessionDate;  // Fecha de la sesión
-    private LocalTime startTime;    // Hora de inicio
-    private LocalTime endTime;      // Hora de fin
-    private String reason;          // Motivo (opcional, útil para reprogramaciones)
-    private boolean rescheduled = false;  // Indica si la sesión fue reprogramada
+    private LocalDate sessionDate;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String reason;
+    private boolean rescheduled = false;
     private boolean therapistPresent;
     private boolean patientPresent;
+    private int renewPlan;
+
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
@@ -32,7 +34,7 @@ public class Session {
 
     @ManyToOne
     @JoinColumn(name = "therapist_id", nullable = false)
-    private Therapist therapist;
+    private User therapist;
 
     @ManyToOne
     @JoinColumn(name = "room_id", nullable = false)
@@ -41,6 +43,11 @@ public class Session {
     @ManyToOne
     @JoinColumn(name = "plan_id", nullable = false)
     private Plan plan;
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+        this.endTime = startTime != null ? startTime.plusMinutes(50) : null;
+    }
 }
 
 

@@ -1,16 +1,17 @@
 package com.plenamente.sgt.web.controller;
 
 import com.plenamente.sgt.domain.dto.PatientDto.RegisterPatient;
+import com.plenamente.sgt.domain.dto.PatientDto.RenewPlanDto;
 import com.plenamente.sgt.domain.dto.PatientDto.UpdatePatient;
 import com.plenamente.sgt.domain.dto.PatientDto.ListPatient;
 import com.plenamente.sgt.domain.entity.Patient;
 import com.plenamente.sgt.service.PatientService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,9 +23,15 @@ public class PatientController {
     private final PatientService patientService;
 
     // Endpoint para registrar un paciente
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @PostMapping("/register")
-    public ResponseEntity<Patient> registerPatient(@RequestBody RegisterPatient registerPatient) {
-        return ResponseEntity.ok(patientService.createPatient(registerPatient));
+    public ResponseEntity<?> registerPatient(@RequestBody RegisterPatient registerPatient) {
+        try {
+            Patient patient = patientService.createPatient(registerPatient);
+            return ResponseEntity.ok(patient);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
     }
 
     // Endpoint para listar todos los pacientes
@@ -32,6 +39,15 @@ public class PatientController {
     public ResponseEntity<List<ListPatient>> getAllPatients() {
         List<ListPatient> patients = patientService.getAllPatients();
         return ResponseEntity.ok(patients);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
+    @PostMapping("/renew-plan")
+    public ResponseEntity<ListPatient> renewPlan(@Valid @RequestBody RenewPlanDto renewPlanDto) {
+
+        patientService.renewPlan(renewPlanDto);
+        ListPatient updatedPatient = patientService.getPatientById(renewPlanDto.patientId());
+        return ResponseEntity.ok(updatedPatient);
     }
 
     // Endpoint para obtener un paciente por ID
@@ -42,6 +58,7 @@ public class PatientController {
     }
 
     // Endpoint para actualizar un paciente
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARY')")
     @PutMapping("select/{id}")
     public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody UpdatePatient updatePatient) {
         Patient updatedPatient = patientService.updatePatient(id, updatePatient);
@@ -67,5 +84,11 @@ public class PatientController {
     public ResponseEntity<List<ListPatient>> orderPatientsByName(@RequestParam String order) {
         List<ListPatient> orderedPatients = patientService.orderPatientsByName(order);
         return ResponseEntity.ok(orderedPatients);
+    }
+
+    @GetMapping("/validate-dni")
+    public ResponseEntity<Boolean> validateDNI(@RequestParam String dni) {
+        boolean isTaken = patientService.isDNITaken(dni);
+        return ResponseEntity.ok(isTaken);
     }
 }

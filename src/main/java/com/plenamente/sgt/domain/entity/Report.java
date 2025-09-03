@@ -10,13 +10,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class Report {
+public class Report extends DocumentMetadata {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReport;
-    @ManyToOne
-    @JoinColumn(name = "id_medical_history")
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_medical_history", nullable = false)
     private MedicalHistory medicalHistory;
-    private String name;
-    private String description;
+
+    @Column(nullable = false)
+    private Integer treatmentMonth;
 }

@@ -14,6 +14,9 @@ public interface MaterialService {
     String generateNextMaterialId();
     String incrementAlphaPart(String alphaPart);
     Material assignMaterialToRoom(String materialId, Long roomId);
+
+    void updateUnassignedMaterialsCache();
+
     Material unassignMaterialFromRoom(String materialId);
     List<RegisterMaterial> getUnassignedMaterials();
     void deleteMaterial(String materialId);

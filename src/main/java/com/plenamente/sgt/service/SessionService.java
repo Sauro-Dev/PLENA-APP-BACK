@@ -1,13 +1,9 @@
 package com.plenamente.sgt.service;
 
-import com.plenamente.sgt.domain.dto.SessionDto.ListSession;
-import com.plenamente.sgt.domain.dto.SessionDto.MarkPresenceSession;
-import com.plenamente.sgt.domain.dto.SessionDto.RegisterSession;
-import com.plenamente.sgt.domain.dto.SessionDto.UpdateSession;
+import com.plenamente.sgt.domain.dto.SessionDto.*;
 import com.plenamente.sgt.domain.dto.UserDto.ListTherapist;
+import com.plenamente.sgt.domain.entity.Room;
 import com.plenamente.sgt.domain.entity.Session;
-import com.plenamente.sgt.domain.entity.Therapist;
-import com.plenamente.sgt.domain.entity.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,10 +11,28 @@ import java.util.List;
 
 public interface SessionService {
     Session createSession(RegisterSession dto);
+
     Session updateSession(UpdateSession dto);
+
     List<ListSession> getSessionsByDate(LocalDate date);
+
     List<ListSession> getSessionsByTherapist(Long therapistId);
-    Session markPresence(MarkPresenceSession dto);
-    void assignSessionsFromSession(Long sessionId);
+
+    Session markPresence(PresenceDTO dto);
+
     List<ListTherapist> getAvailableTherapist(LocalDate date, LocalTime startTime, LocalTime endTime);
+
+    List<ListSession> getSessionsByDateRange(LocalDate startDate, LocalDate endDate);
+
+    List<Room> getAvailableRooms(LocalDate date, LocalTime startTime, LocalTime endTime);
+
+    List<ListSession> getSessionsByRoom(Long roomId);
+
+    List<ListSession> getFilteredSessions(LocalDate date, Long therapistId, Long roomId);
+    List<ReportSession> getAllSessionsReport();
+    List<ReportSession> getSessionsReportByTherapist(Long therapistId);
+    List<ReportSession> getSessionsReportByPatient(Long patientId);
+    List<ReportSession> getAllSessionsReportByDateRange(LocalDate startDate, LocalDate endDate);
+    List<ReportSession> getSessionsReportByTherapistAndDateRange(Long therapistId, LocalDate startDate, LocalDate endDate);
+    List<ReportSession> getSessionsReportByPatientAndDateRange(Long patientId, LocalDate startDate, LocalDate endDate);
 }

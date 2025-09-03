@@ -26,6 +26,7 @@ public abstract class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUser;
+    @Column(unique = true)
     private String username;
     private String password;
     @Enumerated(EnumType.STRING)
@@ -43,6 +44,15 @@ public abstract class User implements UserDetails {
     private String phoneBackup;
     private LocalDate birthdate;
     private boolean enabled = true;
+    private boolean isTherapist;
+
+    public void setIsTherapist(boolean isTherapist) {
+        this.isTherapist = isTherapist;
+    }
+
+    @Getter
+    @Setter
+    private boolean firstLogin = true;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
